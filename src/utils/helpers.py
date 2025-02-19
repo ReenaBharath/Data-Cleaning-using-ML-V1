@@ -1,0 +1,172 @@
+import re
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Union, Optional
+import pycountry
+from langdetect import detect
+import logging
+
+logger = logging.getLogger(__name__)
+
+def validate_text(text: str, min_length: int = 10) -> bool:
+    """
+    Validate if text meets basic quality criteria
+    """
+    if not isinstance(text, str):
+        return False
+    
+    # Check minimum length
+    if len(text.strip()) < min_length:
+        return False
+        
+    # Check if text contains actual content (not just special characters)
+    if not re.search(r'[a-zA-Z]', text):
+        return False
+        
+    return True
+
+def validate_hashtags(hashtags: str) -> bool:
+    """
+    Validate if hashtags are properly formatted
+    """
+    if not isinstance(hashtags, str):
+        return False
+        
+    # Split hashtags if multiple
+    tags = hashtags.split() if ' ' in hashtags else [hashtags]
+    
+    # Check if each tag is valid
+    for tag in tags:
+        if not re.match(r'^#?[\w\d]+$', tag):
+            return False
+            
+    return True
+
+def validate_country_code(code: str) -> bool:
+    """
+    Validate if country code exists in pycountry database
+    """
+    if not isinstance(code, str) or not code:
+        return False
+        
+    code = code.upper().strip()
+    return bool(pycountry.countries.get(alpha_2=code))
+
+def validate_development_status(status: str) -> bool:
+    """
+    Validate if development status is in accepted values
+    """
+    if not isinstance(status, str):
+        return False
+        
+    valid_statuses = {'developed', 'developing', 'unknown'}
+    return status.lower().strip() in valid_statuses
+
+def detect_language(text: str) -> Optional[str]:
+    """
+    Detect language of text using langdetect
+    """
+    try:
+        return detect(text)
+    except:
+        return None
+
+def calculate_text_statistics(texts: List[str]) -> Dict[str, float]:
+    """
+    Calculate various statistics about text data
+    """
+    stats = {}
+    
+    # Length statistics
+    lengths = [len(text) for text in texts]
+    stats['avg_length'] = np.mean(lengths)
+    stats['std_length'] = np.std(lengths)
+    stats['min_length'] = min(lengths)
+    stats['max_length'] = max(lengths)
+    
+    # Character type statistics
+    alpha_ratio = []
+    digit_ratio = []
+    special_ratio = []
+    
+    for text in texts:
+        total_len = len(text)
+        if total_len == 0:
+            continue
+            
+        alpha_ratio.append(sum(c.isalpha() for c in text) / total_len)
+        digit_ratio.append(sum(c.isdigit() for c in text) / total_len)
+        special_ratio.append(sum(not c.isalnum() for c in text) / total_len)
+        
+    stats['avg_alpha_ratio'] = np.mean(alpha_ratio)
+    stats['avg_digit_ratio'] = np.mean(digit_ratio)
+    stats['avg_special_ratio'] = np.mean(special_ratio)
+    
+    return stats
+
+def generate_quality_report(df: pd.DataFrame) -> Dict[str, Dict[str, Union[float, int]]]:
+    """
+    Generate comprehensive quality report for dataset
+    """
+    report = {}
+    
+    # Text column statistics
+    if 'text' in df.columns:
+        text_stats = calculate_text_statistics(df['text'].dropna().tolist())
+        text_stats['null_count'] = df['text'].isnull().sum()
+        text_stats['unique_count'] = df['text'].nunique()
+        report['text'] = text_stats
+        
+    # Hashtag statistics
+    if 'hashtags' in df.columns:
+        hashtag_stats = {
+            'null_count': df['hashtags'].isnull().sum(),
+            'unique_count': df['hashtags'].nunique(),
+            'avg_tags_per_row': df['hashtags'].str.count('#').mean()
+        }
+        report['hashtags'] = hashtag_stats
+        
+    # Country code statistics
+    if 'country_code' in df.columns:
+        country_stats = {
+            'null_count': df['country_code'].isnull().sum(),
+            'unique_count': df['country_code'].nunique(),
+            'invalid_codes': sum(~df['country_code'].apply(validate_country_code))
+        }
+        report['country_code'] = country_stats
+        
+    # Development status statistics
+    if 'development_status' in df.columns:
+        dev_stats = {
+            'null_count': df['development_status'].isnull().sum(),
+            'unique_count': df['development_status'].nunique(),
+            'invalid_status': sum(~df['development_status'].apply(validate_development_status))
+        }
+        report['development_status'] = dev_stats
+        
+    return report
+
+def save_quality_report(report: Dict[str, Dict[str, Union[float, int]]], path: str):
+    """
+    Save quality report to file
+    """
+    # Convert report to DataFrame for better visualization
+    df_report = pd.DataFrame.from_dict(report, orient='index')
+    df_report.to_csv(path)
+    logger.info(f"Quality report saved to {path}")
+
+def load_and_validate_config(config_path: str) -> Dict:
+    """
+    Load and validate configuration file
+    """
+    try:
+        config = pd.read_json(config_path)
+        required_keys = ['min_text_length', 'allowed_languages', 'country_codes']
+        
+        if not all(key in config for key in required_keys):
+            raise ValueError(f"Missing required keys in config: {required_keys}")
+            
+        return config
+    except Exception as e:
+        logger.error(f"Error loading config: {str(e)}")
+        raise
