@@ -17,17 +17,17 @@ This project implements a machine learning-based data cleaning pipeline specific
 ## Project Structure
 
 ```markdown
-data_cleaning_project/
-??? data/
-?   ??? raw/                     # Raw input data
-?   ??? interim/                 # Intermediate data
-?   ??? processed/               # Final cleaned data
-??? models/                      # Trained models
-??? notebooks/                   # Jupyter notebooks
-??? src/                        # Source code
-??? tests/                      # Unit tests
-??? outputs/                    # Generated outputs
-??? configs/                    # Configuration files
+Data_Cleaning_using_ML_V1/
+├── data/
+│   ├── raw/                     # Raw input data
+│   ├── interim/                 # Intermediate data
+│   └── processed/               # Final cleaned data
+├── models/                      # Trained models
+├── notebooks/                   # Jupyter notebooks
+├── src/                        # Source code
+├── tests/                      # Unit tests
+├── outputs/                    # Generated outputs
+└── configs/                    # Configuration files
 ```
 
 ## Installation
@@ -43,8 +43,8 @@ data_cleaning_project/
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/data-cleaning-project.git
-cd data-cleaning-project
+git clone https://github.com/yourusername/data-cleaning-project.git](https://github.com/ReenaBharath/Data-Cleaning-using-ML-V1.git
+cd Data-cleaning-using-ML-1
 ```
 
 2.Create and activate virtual environment:
@@ -124,13 +124,6 @@ The pipeline expects input data with the following columns:
 - `country_code`: Two-letter country codes
 - `development_status`: Development status indicator
 
-Example:
-
-```csv
-text,hashtags,country_code,development_status
-"Sample text",#hashtag1 #hashtag2,US,Developed
-```
-
 ## Model Details
 
 The pipeline uses the following pre-trained models:
@@ -165,53 +158,13 @@ Run the test suite:
 pytest tests/
 ```
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
-
-- Hugging Face for providing pre-trained models
-- scikit-learn community for machine learning tools
-- Pandas developers for data manipulation capabilities
 
 ## Contact
 
-Your Name - <xbhar002@studenti.czu.cz>
+Your Name - Reena Bharath
+Email - <xbhar002@studenti.czu.cz>
 
-## Troubleshooting
-
-### Common Issues
-
-1. CUDA Out of Memory
-
-```bash
-# Reduce batch size in configs/model_config.yaml:
-model_params:
-  batch_size: 16  # Reduce from 32
-```
-
-2.Python Path Issues
-
-```bash
-# Add to system PATH:
-C:\Users\YourUsername\AppData\Local\Programs\Python\Python312
-C:\Users\YourUsername\AppData\Local\Programs\Python\Python312\Scripts
-```
-
-3.Model Download Issues
-
-```bash
-# Set environment variable:
-export TRANSFORMERS_CACHE="path/to/cache/directory"
-# or for Windows:
-set TRANSFORMERS_CACHE="path/to/cache/directory"
-```
