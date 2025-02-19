@@ -40,10 +40,10 @@ Data_Cleaning_using_ML_V1/
 │   └── processed/               # Final cleaned data
 ├── models/                      # Trained models
 ├── notebooks/                   # Jupyter notebooks
-├── src/                        # Source code
-├── tests/                      # Unit tests
-├── outputs/                    # Generated outputs
-└── configs/                    # Configuration files
+├── src/                         # Source code
+├── tests/                       # Unit tests
+├── outputs/                     # Generated outputs
+└── configs/                     # Configuration files
 ```
 
 ## Installation
@@ -51,7 +51,7 @@ Data_Cleaning_using_ML_V1/
 1.Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/Data_Cleaning_using_ML_V1.git
+git clone https://github.com/ReenaBharath/Data-Cleaning-using-ML-V1.git
 ```
 
 2.Install dependencies:
