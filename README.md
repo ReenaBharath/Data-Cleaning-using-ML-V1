@@ -34,16 +34,16 @@ This project implements a comprehensive machine learning-based data cleaning pip
 
 ```markdown
 Data_Cleaning_using_ML_V1/
-??? data/
-?   ??? raw/                     # Raw input data
-?   ??? interim/                 # Intermediate data
-?   ??? processed/               # Final cleaned data
-??? models/                      # Trained models
-??? notebooks/                   # Jupyter notebooks
-??? src/                        # Source code
-??? tests/                      # Unit tests
-??? outputs/                    # Generated outputs
-??? configs/                    # Configuration files
+├── data/
+│   ├── raw/                     # Raw input data
+│   ├── interim/                 # Intermediate data
+│   └── processed/               # Final cleaned data
+├── models/                      # Trained models
+├── notebooks/                   # Jupyter notebooks
+├── src/                        # Source code
+├── tests/                      # Unit tests
+├── outputs/                    # Generated outputs
+└── configs/                    # Configuration files
 ```
 
 ## Installation
