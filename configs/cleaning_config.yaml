@@ -1,0 +1,96 @@
+# Data Cleaning Configuration Parameters
+cleaning_params:
+  # Text cleaning parameters
+  text:
+    min_length: 10
+    max_length: 1000
+    language: 'en'
+    remove_urls: true
+    remove_rt: true
+    remove_mentions: true
+    remove_html: true
+    normalize_case: true
+    handle_emojis: "remove"  # Options: remove, keep, replace
+    handle_numbers: "keep"   # Options: remove, keep, replace_words
+    
+  # Hashtag cleaning
+  hashtags:
+    min_length: 2
+    max_length: 50
+    remove_duplicates: true
+    standardize_case: true
+    remove_special_chars: true
+    max_hashtags_per_entry: 10
+    
+  # Country code standardization
+  country_code:
+    case: "upper"
+    handle_missing: "UNKNOWN"
+    valid_codes: [
+      "US", "UK", "IN", "CN", "JP", "DE", "FR", "IT", "BR", "CA",
+      "AU", "RU", "KR", "ES", "MX", "ID", "TR", "SA", "ZA", "NG"
+    ]
+    
+  # Development status standardization
+  development_status:
+    categories: ["Developed", "Developing"]
+    default_value: "Unknown"
+    confidence_threshold: 0.8
+    
+# Data validation rules
+validation:
+  text:
+    required: true
+    allow_empty: false
+    min_words: 3
+    
+  hashtags:
+    required: false
+    allow_empty: true
+    
+  country_code:
+    required: true
+    allow_empty: false
+    
+  development_status:
+    required: true
+    allow_empty: false
+    
+# Processing options
+processing:
+  batch_size: 32
+  num_workers: 4
+  use_multiprocessing: true
+  
+# Output settings
+output:
+  save_interim: true
+  save_format: "csv"
+  compression: null  # Options: null, "gzip", "bz2", "zip"
+  include_metadata: true
+  
+# Logging and reporting
+reporting:
+  generate_report: true
+  save_cleaning_stats: true
+  log_level: "info"
+  report_format: ["csv", "json"]
+  
+# Quality checks
+quality_checks:
+  perform_checks: true
+  checks:
+    missing_values:
+      threshold: 0.1
+    text_quality:
+      min_unique_words: 5
+      max_repetition: 0.3
+    language_confidence:
+      min_threshold: 0.8
+    
+# Error handling
+error_handling:
+  log_errors: true
+  error_threshold: 0.1
+  stop_on_critical: true
+  backup_original: true

@@ -1,0 +1,62 @@
+# Model Configuration Parameters
+model_params:
+  # General settings
+  device: 'cuda'  # 'cuda' or 'cpu'
+  seed: 42
+  
+  # Training parameters
+  batch_size: 32
+  max_length: 512
+  learning_rate: 2e-5
+  num_epochs: 3
+  warmup_steps: 500
+  weight_decay: 0.01
+  gradient_accumulation_steps: 1
+  
+  # Model specific parameters
+  language_detection:
+    model_name: "papluca/xlm-roberta-base-language-detection"
+    threshold: 0.8
+    cache_dir: "./models/cache/lang_detection"
+    
+  text_normalization:
+    model_name: "oliverguhr/spelling-correction-english-base"
+    threshold: 0.7
+    cache_dir: "./models/cache/text_norm"
+    
+  development_status:
+    model_name: "distilbert-base-uncased"
+    num_labels: 2
+    cache_dir: "./models/cache/dev_status"
+    
+# Optimization settings
+optimization:
+  use_mixed_precision: true
+  use_gradient_checkpointing: true
+  max_grad_norm: 1.0
+  
+# Checkpoint settings
+checkpoint:
+  save_strategy: "epoch"
+  save_steps: 500
+  save_total_limit: 2
+  load_best_model_at_end: true
+  
+# Logging settings
+logging:
+  logging_dir: "./logs"
+  logging_steps: 100
+  log_level: "info"
+  
+# Evaluation settings
+evaluation:
+  eval_strategy: "epoch"
+  eval_steps: 500
+  metric_for_best_model: "accuracy"
+  greater_is_better: true
+  
+# Early stopping
+early_stopping:
+  enabled: true
+  patience: 3
+  min_delta: 0.001
