@@ -5,6 +5,7 @@ from typing import List, Dict, Union, Optional
 import pycountry
 from langdetect import detect
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +26,12 @@ def validate_text(text: str, min_length: int = 10) -> bool:
         
     return True
 
-def validate_hashtags(hashtags: str) -> bool:
+def validate_hashtags(hashtags: Union[str, List[str]]) -> bool:
     """
     Validate if hashtags are properly formatted
     """
+    if isinstance(hashtags, list):
+        hashtags = ' '.join(hashtags)
     if not isinstance(hashtags, str):
         return False
         
@@ -50,7 +53,18 @@ def validate_country_code(code: str) -> bool:
         return False
         
     code = code.upper().strip()
-    return bool(pycountry.countries.get(alpha_2=code))
+    
+    # Handle common variations
+    code_map = {
+        'UK': 'GB',
+        'USA': 'US'
+    }
+    code = code_map.get(code, code)
+    
+    try:
+        return bool(pycountry.countries.get(alpha_2=code))
+    except:
+        return False
 
 def validate_development_status(status: str) -> bool:
     """
@@ -66,6 +80,9 @@ def detect_language(text: str) -> Optional[str]:
     """
     Detect language of text using langdetect
     """
+    if not isinstance(text, str) or not text.strip():
+        return None
+        
     try:
         return detect(text)
     except:
@@ -75,14 +92,18 @@ def calculate_text_statistics(texts: List[str]) -> Dict[str, float]:
     """
     Calculate various statistics about text data
     """
+    if not texts:
+        return {}
+        
     stats = {}
     
     # Length statistics
-    lengths = [len(text) for text in texts]
-    stats['avg_length'] = np.mean(lengths)
-    stats['std_length'] = np.std(lengths)
-    stats['min_length'] = min(lengths)
-    stats['max_length'] = max(lengths)
+    lengths = [len(text) for text in texts if isinstance(text, str)]
+    if lengths:
+        stats['avg_length'] = np.mean(lengths)
+        stats['std_length'] = np.std(lengths)
+        stats['min_length'] = min(lengths)
+        stats['max_length'] = max(lengths)
     
     # Character type statistics
     alpha_ratio = []
@@ -90,6 +111,9 @@ def calculate_text_statistics(texts: List[str]) -> Dict[str, float]:
     special_ratio = []
     
     for text in texts:
+        if not isinstance(text, str):
+            continue
+            
         total_len = len(text)
         if total_len == 0:
             continue
@@ -98,9 +122,10 @@ def calculate_text_statistics(texts: List[str]) -> Dict[str, float]:
         digit_ratio.append(sum(c.isdigit() for c in text) / total_len)
         special_ratio.append(sum(not c.isalnum() for c in text) / total_len)
         
-    stats['avg_alpha_ratio'] = np.mean(alpha_ratio)
-    stats['avg_digit_ratio'] = np.mean(digit_ratio)
-    stats['avg_special_ratio'] = np.mean(special_ratio)
+    if alpha_ratio:
+        stats['avg_alpha_ratio'] = np.mean(alpha_ratio)
+        stats['avg_digit_ratio'] = np.mean(digit_ratio)
+        stats['avg_special_ratio'] = np.mean(special_ratio)
     
     return stats
 
@@ -108,6 +133,9 @@ def generate_quality_report(df: pd.DataFrame) -> Dict[str, Dict[str, Union[float
     """
     Generate comprehensive quality report for dataset
     """
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame")
+        
     report = {}
     
     # Text column statistics
@@ -122,49 +150,66 @@ def generate_quality_report(df: pd.DataFrame) -> Dict[str, Dict[str, Union[float
         hashtag_stats = {
             'null_count': df['hashtags'].isnull().sum(),
             'unique_count': df['hashtags'].nunique(),
-            'avg_tags_per_row': df['hashtags'].str.count('#').mean()
+            'avg_tags_per_row': df['hashtags'].str.count('#').mean() if df['hashtags'].dtype == 'object' else 0
         }
         report['hashtags'] = hashtag_stats
         
     # Country code statistics
-    if 'country_code' in df.columns:
+    if 'place_country_code' in df.columns:
         country_stats = {
-            'null_count': df['country_code'].isnull().sum(),
-            'unique_count': df['country_code'].nunique(),
-            'invalid_codes': sum(~df['country_code'].apply(validate_country_code))
+            'null_count': df['place_country_code'].isnull().sum(),
+            'unique_count': df['place_country_code'].nunique(),
+            'invalid_codes': sum(~df['place_country_code'].fillna('').apply(validate_country_code))
         }
         report['country_code'] = country_stats
         
     # Development status statistics
-    if 'development_status' in df.columns:
+    if 'Developed / Developing' in df.columns:
         dev_stats = {
-            'null_count': df['development_status'].isnull().sum(),
-            'unique_count': df['development_status'].nunique(),
-            'invalid_status': sum(~df['development_status'].apply(validate_development_status))
+            'null_count': df['Developed / Developing'].isnull().sum(),
+            'unique_count': df['Developed / Developing'].nunique(),
+            'invalid_status': sum(~df['Developed / Developing'].fillna('').apply(validate_development_status))
         }
         report['development_status'] = dev_stats
         
     return report
 
-def save_quality_report(report: Dict[str, Dict[str, Union[float, int]]], path: str):
+def save_quality_report(report: Dict[str, Dict[str, Union[float, int]]], path: str) -> None:
     """
     Save quality report to file
     """
-    # Convert report to DataFrame for better visualization
-    df_report = pd.DataFrame.from_dict(report, orient='index')
-    df_report.to_csv(path)
-    logger.info(f"Quality report saved to {path}")
+    try:
+        # Convert report to DataFrame for better visualization
+        df_report = pd.DataFrame.from_dict(report, orient='index')
+        df_report.to_csv(path)
+        logger.info(f"Quality report saved to {path}")
+    except Exception as e:
+        logger.error(f"Error saving quality report: {str(e)}")
+        raise
 
 def load_and_validate_config(config_path: str) -> Dict:
     """
     Load and validate configuration file
     """
     try:
-        config = pd.read_json(config_path)
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+            
         required_keys = ['min_text_length', 'allowed_languages', 'country_codes']
+        missing_keys = [key for key in required_keys if key not in config]
         
-        if not all(key in config for key in required_keys):
-            raise ValueError(f"Missing required keys in config: {required_keys}")
+        if missing_keys:
+            raise ValueError(f"Missing required keys in config: {missing_keys}")
+            
+        # Validate config values
+        if not isinstance(config['min_text_length'], int) or config['min_text_length'] <= 0:
+            raise ValueError("min_text_length must be a positive integer")
+            
+        if not isinstance(config['allowed_languages'], list):
+            raise ValueError("allowed_languages must be a list")
+            
+        if not isinstance(config['country_codes'], list):
+            raise ValueError("country_codes must be a list")
             
         return config
     except Exception as e:

@@ -17,7 +17,7 @@ cleaning_params:
   hashtags:
     min_length: 2
     max_length: 50
-    remove_duplicates: true
+    remove_duplicates: true``
     standardize_case: true
     remove_special_chars: true
     max_hashtags_per_entry: 10
@@ -25,7 +25,7 @@ cleaning_params:
   # Country code standardization
   country_code:
     case: "upper"
-    handle_missing: "UNKNOWN"
+    handle_missing: "UNK"  # Changed to match test cases
     valid_codes: [
       "US", "UK", "IN", "CN", "JP", "DE", "FR", "IT", "BR", "CA",
       "AU", "RU", "KR", "ES", "MX", "ID", "TR", "SA", "ZA", "NG"

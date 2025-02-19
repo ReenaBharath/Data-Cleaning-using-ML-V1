@@ -43,6 +43,8 @@ class TextCleaner:
     
     def is_english(self, text: str) -> bool:
         """Check if text is in English."""
+        if not isinstance(text, str) or not text.strip():
+            return False
         try:
             return detect(text) == 'en'
         except:
@@ -50,15 +52,20 @@ class TextCleaner:
             
     def translate_to_english(self, text: str) -> str:
         """Translate non-English text to English."""
+        if not isinstance(text, str) or not text.strip():
+            return ""
         try:
             if not self.is_english(text):
-                return self.translator.translate(text, dest='en').text
+                translated = self.translator.translate(text, dest='en')
+                return translated.text if translated else text
         except:
             pass
         return text
         
-    def clean_hashtags(self, hashtags: str) -> str:
+    def clean_hashtags(self, hashtags: Union[str, List[str]]) -> str:
         """Clean and standardize hashtags."""
+        if isinstance(hashtags, list):
+            hashtags = ' '.join(hashtags)
         if not isinstance(hashtags, str):
             return ""
             
@@ -72,13 +79,13 @@ class TextCleaner:
             tag = re.sub(r'[^\w#]', '', tag)
             
             # Ensure it starts with #
-            if not tag.startswith('#'):
+            if tag and not tag.startswith('#'):
                 tag = '#' + tag
                 
             # Convert to lowercase for standardization
             tag = tag.lower()
             
-            if tag not in cleaned_hashtags:  # Remove duplicates
+            if tag and tag not in cleaned_hashtags:  # Remove duplicates and empty tags
                 cleaned_hashtags.append(tag)
                 
         return ' '.join(cleaned_hashtags)
@@ -90,9 +97,20 @@ class TextCleaner:
             
         code = code.upper().strip()
         
+        # Handle common variations
+        code_map = {
+            'UK': 'GB',
+            'USA': 'US'
+        }
+        code = code_map.get(code, code)
+        
         # Validate country code
         try:
             country = pycountry.countries.get(alpha_2=code)
+            if country:
+                return country.alpha_2
+            # Try alpha_3 if alpha_2 fails
+            country = pycountry.countries.get(alpha_3=code)
             return country.alpha_2 if country else "UNK"
         except:
             return "UNK"
@@ -105,8 +123,8 @@ class TextCleaner:
         status = status.lower().strip()
         
         # Map various forms to standard values
-        developed_patterns = ['developed', 'advance', 'high-income', 'first world']
-        developing_patterns = ['developing', 'emerging', 'low-income', 'third world']
+        developed_patterns = ['developed', 'advance', 'high-income', 'first world', 'first-world']
+        developing_patterns = ['developing', 'emerging', 'low-income', 'third world', 'third-world', 'middle-income']
         
         for pattern in developed_patterns:
             if pattern in status:
@@ -120,19 +138,42 @@ class TextCleaner:
         
     def detect_anomalies(self, texts: List[str]) -> np.ndarray:
         """Detect anomalous texts using Isolation Forest."""
+        if not texts:
+            return np.array([])
+            
+        # Clean and prepare texts
+        cleaned_texts = [self.clean_text(text) for text in texts]
+        cleaned_texts = [text for text in cleaned_texts if text]
+        
+        if not cleaned_texts:
+            return np.array([])
+            
         # Convert texts to TF-IDF features
-        features = self.tfidf.fit_transform(texts)
+        features = self.tfidf.fit_transform(cleaned_texts)
         
         # Fit and predict anomalies
         return self.isolation_forest.fit_predict(features.toarray())
         
     def cluster_similar_texts(self, texts: List[str]) -> np.ndarray:
         """Cluster similar texts using DBSCAN."""
-        features = self.tfidf.fit_transform(texts)
+        if not texts:
+            return np.array([])
+            
+        # Clean and prepare texts
+        cleaned_texts = [self.clean_text(text) for text in texts]
+        cleaned_texts = [text for text in cleaned_texts if text]
+        
+        if not cleaned_texts:
+            return np.array([])
+            
+        features = self.tfidf.fit_transform(cleaned_texts)
         return self.dbscan.fit_predict(features.toarray())
         
     def clean_dataset(self, df: pd.DataFrame) -> pd.DataFrame:
         """Clean all columns in the dataset."""
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError("Input must be a pandas DataFrame")
+            
         df = df.copy()
         
         # Clean text column
@@ -147,11 +188,11 @@ class TextCleaner:
             df['hashtags'] = df['hashtags'].apply(self.clean_hashtags)
             
         # Clean country codes
-        if 'country_code' in df.columns:
-            df['country_code'] = df['country_code'].apply(self.clean_country_code)
+        if 'place_country_code' in df.columns:
+            df['place_country_code'] = df['place_country_code'].apply(self.clean_country_code)
             
         # Clean development status
-        if 'development_status' in df.columns:
-            df['development_status'] = df['development_status'].apply(self.clean_development_status)
+        if 'Developed / Developing' in df.columns:
+            df['Developed / Developing'] = df['Developed / Developing'].apply(self.clean_development_status)
             
         return df

@@ -15,7 +15,7 @@ def sample_data():
             'http://example.com Some text with URL',
             'Short txt',
             'Text with &amp; HTML entities',
-            'Non-English текст here',
+            'Non-English текѝт here',
             None,
             ''
         ],
@@ -60,18 +60,21 @@ def test_clean_text(cleaner):
     # Test handling of non-string input
     assert cleaner.clean_text(None) == ''
     assert cleaner.clean_text(123) == ''
+    
+    # Test minimum length requirement
+    assert cleaner.clean_text('short') == ''
+    assert len(cleaner.clean_text('This is long enough')) >= cleaner.min_text_length
 
 def test_clean_hashtags(cleaner):
     """Test hashtag cleaning functionality"""
-    # Test duplicate removal
+    # Test duplicate removal and case standardization
     cleaned = cleaner.clean_hashtags('#AI #MachineLearning #AI')
     assert cleaned.count('#ai') == 1
-    
-    # Test case standardization
-    assert cleaner.clean_hashtags('#PYTHON') == '#python'
+    assert all(tag.islower() for tag in cleaned.split())
     
     # Test invalid hashtag handling
     assert cleaner.clean_hashtags('InvalidHashtag#') == '#invalidhashtag'
+    assert cleaner.clean_hashtags('#mixed_CASE_tags') == '#mixed_case_tags'
     
     # Test handling of non-string input
     assert cleaner.clean_hashtags(None) == ''
@@ -81,6 +84,7 @@ def test_clean_country_code(cleaner):
     """Test country code cleaning functionality"""
     # Test case standardization
     assert cleaner.clean_country_code('us') == 'US'
+    assert cleaner.clean_country_code('UK') == 'GB'  # Convert UK to GB
     
     # Test invalid code handling
     assert cleaner.clean_country_code('XX') == 'UNK'
@@ -98,26 +102,36 @@ def test_clean_development_status(cleaner):
     # Test various forms
     assert cleaner.clean_development_status('advanced economy') == 'Developed'
     assert cleaner.clean_development_status('third world') == 'Developing'
+    assert cleaner.clean_development_status('least developed') == 'Developing'
     
     # Test invalid input handling
     assert cleaner.clean_development_status('') == 'Unknown'
     assert cleaner.clean_development_status(None) == 'Unknown'
+    assert cleaner.clean_development_status('invalid status') == 'Unknown'
 
 def test_clean_dataset(cleaner, sample_data):
     """Test dataset-level cleaning"""
     df = pd.DataFrame(sample_data)
     cleaned_df = cleaner.clean_dataset(df)
     
+    # Test that all required columns exist
+    required_columns = {'text', 'hashtags', 'country_code', 'development_status'}
+    assert all(col in cleaned_df.columns for col in required_columns)
+    
     # Test that short texts are removed
-    assert all(len(text) >= cleaner.min_text_length for text in cleaned_df['text'])
+    assert all(len(text) >= cleaner.min_text_length for text in cleaned_df['text'] if pd.notna(text))
     
-    # Test that all country codes are uppercase
-    assert all(code == 'UNK' or code.isupper() for code in cleaned_df['country_code'])
+    # Test that all country codes are valid
+    valid_codes = {'UNK'} | set(cleaner.valid_country_codes)
+    assert all(code in valid_codes for code in cleaned_df['country_code'])
     
-    # Test that all hashtags are lowercase
-    assert all(all(tag.islower() for tag in tags.split() if tag) 
-              for tags in cleaned_df['hashtags'] if isinstance(tags, str))
+    # Test that all hashtags are properly formatted
+    assert all(all(tag.startswith('#') and tag[1:].islower() for tag in tags.split() if tag)
+              for tags in cleaned_df['hashtags'] if pd.notna(tags))
     
     # Test that development status is standardized
     valid_statuses = {'Developed', 'Developing', 'Unknown'}
     assert all(status in valid_statuses for status in cleaned_df['development_status'])
+    
+    # Test that no null values remain
+    assert not cleaned_df.isnull().any().any()

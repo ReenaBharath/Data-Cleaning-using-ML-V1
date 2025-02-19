@@ -7,6 +7,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from typing import List, Tuple, Dict, Any
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,6 +42,9 @@ class ModelTrainer:
         """
         Train Isolation Forest for anomaly detection in text data
         """
+        if not texts:
+            raise ValueError("Input texts list cannot be empty")
+            
         logger.info("Training anomaly detection model...")
         
         # Initialize TF-IDF if not already done
@@ -61,6 +65,9 @@ class ModelTrainer:
         """
         Train DBSCAN for clustering similar texts
         """
+        if not texts:
+            raise ValueError("Input texts list cannot be empty")
+            
         logger.info("Training text clustering model...")
         
         # Initialize TF-IDF if not already done
@@ -82,13 +89,20 @@ class ModelTrainer:
         Load BERT model for advanced text processing
         """
         logger.info(f"Loading BERT model: {model_name}")
-        self.bert_tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.bert_model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        try:
+            self.bert_tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.bert_model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        except Exception as e:
+            logger.error(f"Error loading BERT model: {str(e)}")
+            raise
         
     def get_text_embeddings(self, texts: List[str]) -> np.ndarray:
         """
         Get BERT embeddings for texts
         """
+        if not texts:
+            raise ValueError("Input texts list cannot be empty")
+            
         if self.bert_model is None:
             self.load_bert_model()
             
@@ -105,6 +119,12 @@ class ModelTrainer:
         """
         Evaluate the quality of text cleaning
         """
+        if len(original_texts) != len(cleaned_texts):
+            raise ValueError("Original and cleaned texts must have the same length")
+            
+        if not original_texts or not cleaned_texts:
+            raise ValueError("Input texts lists cannot be empty")
+            
         metrics = {}
         
         # Calculate average text length reduction
@@ -128,10 +148,11 @@ class ModelTrainer:
         for i in range(n_texts):
             orig_vec = tfidf_matrix[i].toarray().flatten()
             clean_vec = tfidf_matrix[i + n_texts].toarray().flatten()
-            similarity = np.dot(orig_vec, clean_vec) / (np.linalg.norm(orig_vec) * np.linalg.norm(clean_vec))
-            similarities.append(similarity)
+            if np.linalg.norm(orig_vec) * np.linalg.norm(clean_vec) != 0:
+                similarity = np.dot(orig_vec, clean_vec) / (np.linalg.norm(orig_vec) * np.linalg.norm(clean_vec))
+                similarities.append(similarity)
             
-        metrics['avg_content_preservation'] = np.mean(similarities)
+        metrics['avg_content_preservation'] = np.mean(similarities) if similarities else 0.0
         
         return metrics
         
@@ -141,12 +162,20 @@ class ModelTrainer:
         """
         import joblib
         
-        if self.isolation_forest:
-            joblib.dump(self.isolation_forest, f"{path}/isolation_forest.joblib")
-        if self.dbscan:
-            joblib.dump(self.dbscan, f"{path}/dbscan.joblib")
-        if self.tfidf:
-            joblib.dump(self.tfidf, f"{path}/tfidf.joblib")
+        if not os.path.exists(path):
+            os.makedirs(path)
+            
+        try:
+            if self.isolation_forest:
+                joblib.dump(self.isolation_forest, f"{path}/isolation_forest.joblib")
+            if self.dbscan:
+                joblib.dump(self.dbscan, f"{path}/dbscan.joblib")
+            if self.tfidf:
+                joblib.dump(self.tfidf, f"{path}/tfidf.joblib")
+            logger.info(f"Models successfully saved to {path}")
+        except Exception as e:
+            logger.error(f"Error saving models: {str(e)}")
+            raise
             
     def load_models(self, path: str):
         """
@@ -154,9 +183,14 @@ class ModelTrainer:
         """
         import joblib
         
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Path {path} does not exist")
+            
         try:
             self.isolation_forest = joblib.load(f"{path}/isolation_forest.joblib")
             self.dbscan = joblib.load(f"{path}/dbscan.joblib")
             self.tfidf = joblib.load(f"{path}/tfidf.joblib")
+            logger.info(f"Models successfully loaded from {path}")
         except Exception as e:
             logger.error(f"Error loading models: {str(e)}")
+            raise

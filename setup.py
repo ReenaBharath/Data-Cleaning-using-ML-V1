@@ -1,8 +1,9 @@
 from setuptools import find_packages, setup
+import os
 
 # Read requirements
 with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
+    requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
 
 # Read README for long description
 with open('README.md', 'r', encoding='utf-8') as f:
@@ -16,9 +17,8 @@ setup(
     description='A machine learning-based data cleaning pipeline for text data',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/yourusername/data-cleaning-project',
-    packages=find_packages(where='src'),
-    package_dir={'': 'src'},
+    url='https://github.com/yourusername/Data_Cleaning_using_ML_V1',
+    packages=find_packages(),
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
@@ -41,47 +41,46 @@ setup(
             'isort>=5.10.1',
             'jupyter>=1.0.0',
             'notebook>=6.4.12',
+            'mypy>=1.0.0'
         ],
         'docs': [
-            'sphinx>=4.5.0',
-            'sphinx-rtd-theme>=1.0.0',
+            'sphinx>=5.0.0',
+            'sphinx-rtd-theme>=1.2.0',
             'myst-parser>=0.18.0',
         ],
         'gpu': [
             'torch>=2.0.0',
+            'pytorch-lightning>=2.0.0',
         ],
     },
     entry_points={
         'console_scripts': [
-            'clean-data=ml_data_cleaning.main:main',
+            'clean-data=main:main',
         ],
     },
-    # Include additional files
     package_data={
-        'ml_data_cleaning': [
+        '': [
             'configs/*.yaml',
             'data/raw/.gitkeep',
-            'data/interim/.gitkeep',
+            'data/interim/.gitkeep', 
             'data/processed/.gitkeep',
             'models/.gitkeep',
             'outputs/.gitkeep',
         ],
     },
-    # Exclude certain files
-    exclude_package_data={
-        '': ['*.pyc', '*.pyo', '*.pyd', '__pycache__'],
-    },
-    # Project URLs
+    include_package_data=True,
+    zip_safe=False,
     project_urls={
-        'Bug Reports': 'https://github.com/yourusername/data-cleaning-project/issues',
-        'Source': 'https://github.com/yourusername/data-cleaning-project',
+        'Bug Reports': 'https://github.com/yourusername/Data_Cleaning_using_ML_V1/issues',
+        'Source': 'https://github.com/yourusername/Data_Cleaning_using_ML_V1',
     },
-    # Keywords for PyPI
     keywords=[
         'machine learning',
         'data cleaning',
         'nlp',
         'text processing',
         'data preprocessing',
+        'bert',
+        'transformers'
     ],
 )

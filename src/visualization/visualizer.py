@@ -5,8 +5,11 @@ import plotly.graph_objects as go
 from wordcloud import WordCloud
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
+from sklearn.decomposition import PCA
+from sklearn.feature_extraction.text import TfidfVectorizer
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +18,12 @@ class DataVisualizer:
         """Initialize visualizer with specified style"""
         plt.style.use(style)
         
-    def plot_text_length_distribution(self, texts: List[str], title: str = 'Text Length Distribution'):
+    def plot_text_length_distribution(self, texts: List[str], title: str = 'Text Length Distribution') -> plt.Figure:
         """Plot distribution of text lengths"""
-        lengths = [len(text) for text in texts]
+        if not texts:
+            raise ValueError("Input texts list cannot be empty")
+            
+        lengths = [len(text) for text in texts if isinstance(text, str)]
         
         fig, ax = plt.subplots(figsize=(10, 6))
         sns.histplot(lengths, bins=50, ax=ax)
@@ -27,14 +33,16 @@ class DataVisualizer:
         
         return fig
         
-    def plot_cleaning_impact(self, original_texts: List[str], cleaned_texts: List[str]):
+    def plot_cleaning_impact(self, original_texts: List[str], cleaned_texts: List[str]) -> plt.Figure:
         """Visualize the impact of cleaning on text lengths"""
-        orig_lengths = [len(text) for text in original_texts]
-        clean_lengths = [len(text) for text in cleaned_texts]
+        if len(original_texts) != len(cleaned_texts):
+            raise ValueError("Original and cleaned text lists must have same length")
+            
+        orig_lengths = [len(text) for text in original_texts if isinstance(text, str)]
+        clean_lengths = [len(text) for text in cleaned_texts if isinstance(text, str)]
         
         fig, ax = plt.subplots(figsize=(12, 6))
         
-        # Plot length distributions
         sns.kdeplot(orig_lengths, ax=ax, label='Original', color='blue')
         sns.kdeplot(clean_lengths, ax=ax, label='Cleaned', color='green')
         
@@ -45,9 +53,12 @@ class DataVisualizer:
         
         return fig
         
-    def create_wordcloud(self, texts: List[str], title: str = 'Word Cloud'):
+    def create_wordcloud(self, texts: List[str], title: str = 'Word Cloud') -> plt.Figure:
         """Generate word cloud from texts"""
-        text = ' '.join(texts)
+        if not texts:
+            raise ValueError("Input texts list cannot be empty")
+            
+        text = ' '.join(str(t) for t in texts if isinstance(t, str))
         wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
         
         fig, ax = plt.subplots(figsize=(16, 8))
@@ -57,13 +68,15 @@ class DataVisualizer:
         
         return fig
         
-    def plot_hashtag_frequency(self, hashtags: List[str], top_n: int = 20):
+    def plot_hashtag_frequency(self, hashtags: List[str], top_n: int = 20) -> go.Figure:
         """Plot frequency distribution of hashtags"""
-        # Flatten hashtag lists and count frequencies
+        if not hashtags:
+            raise ValueError("Input hashtags list cannot be empty")
+            
         all_tags = []
         for tags in hashtags:
             if isinstance(tags, str):
-                all_tags.extend(tags.split())
+                all_tags.extend(tag.strip('#') for tag in tags.split())
                 
         tag_freq = pd.Series(all_tags).value_counts().head(top_n)
         
@@ -73,10 +86,12 @@ class DataVisualizer:
         
         return fig
         
-    def plot_country_distribution(self, country_codes: List[str]):
+    def plot_country_distribution(self, country_codes: List[str]) -> go.Figure:
         """Plot geographical distribution of country codes"""
-        # Count country frequencies
-        country_freq = pd.Series(country_codes).value_counts()
+        if not country_codes:
+            raise ValueError("Input country codes list cannot be empty")
+            
+        country_freq = pd.Series([code for code in country_codes if isinstance(code, str)]).value_counts()
         
         fig = go.Figure(data=go.Choropleth(
             locations=country_freq.index,
@@ -93,9 +108,12 @@ class DataVisualizer:
         
         return fig
         
-    def plot_development_status_distribution(self, statuses: List[str]):
+    def plot_development_status_distribution(self, statuses: List[str]) -> go.Figure:
         """Plot distribution of development statuses"""
-        status_counts = pd.Series(statuses).value_counts()
+        if not statuses:
+            raise ValueError("Input statuses list cannot be empty")
+            
+        status_counts = pd.Series([s for s in statuses if isinstance(s, str)]).value_counts()
         
         fig = px.pie(values=status_counts.values, 
                     names=status_counts.index,
@@ -103,11 +121,13 @@ class DataVisualizer:
         
         return fig
         
-    def plot_cleaning_metrics(self, metrics: Dict[str, float]):
+    def plot_cleaning_metrics(self, metrics: Dict[str, float]) -> go.Figure:
         """Visualize cleaning quality metrics"""
+        if not metrics:
+            raise ValueError("Input metrics dictionary cannot be empty")
+            
         fig = go.Figure()
         
-        # Add bars for each metric
         fig.add_trace(go.Bar(
             x=list(metrics.keys()),
             y=list(metrics.values()),
@@ -124,21 +144,17 @@ class DataVisualizer:
         
         return fig
         
-    def plot_anomaly_detection_results(self, texts: List[str], anomaly_scores: np.ndarray):
+    def plot_anomaly_detection_results(self, texts: List[str], anomaly_scores: np.ndarray) -> go.Figure:
         """Visualize anomaly detection results"""
-        # Create PCA for dimensionality reduction
-        from sklearn.decomposition import PCA
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        
-        # Convert texts to TF-IDF features
+        if len(texts) != len(anomaly_scores):
+            raise ValueError("Number of texts must match number of anomaly scores")
+            
         tfidf = TfidfVectorizer(max_features=100)
-        features = tfidf.fit_transform(texts)
+        features = tfidf.fit_transform([str(t) for t in texts if isinstance(t, str)])
         
-        # Reduce to 2D for visualization
         pca = PCA(n_components=2)
         coords = pca.fit_transform(features.toarray())
         
-        # Create DataFrame for plotting
         df = pd.DataFrame({
             'x': coords[:, 0],
             'y': coords[:, 1],
@@ -151,16 +167,17 @@ class DataVisualizer:
         
         return fig
         
-    def plot_clustering_results(self, texts: List[str], cluster_labels: np.ndarray):
+    def plot_clustering_results(self, texts: List[str], cluster_labels: np.ndarray) -> go.Figure:
         """Visualize clustering results"""
-        # Convert texts to TF-IDF features and reduce dimensionality
+        if len(texts) != len(cluster_labels):
+            raise ValueError("Number of texts must match number of cluster labels")
+            
         tfidf = TfidfVectorizer(max_features=100)
-        features = tfidf.fit_transform(texts)
+        features = tfidf.fit_transform([str(t) for t in texts if isinstance(t, str)])
         
         pca = PCA(n_components=2)
         coords = pca.fit_transform(features.toarray())
         
-        # Create DataFrame for plotting
         df = pd.DataFrame({
             'x': coords[:, 0],
             'y': coords[:, 1],
@@ -173,14 +190,21 @@ class DataVisualizer:
         
         return fig
         
-    def save_plots(self, figs: Dict[str, Union[plt.Figure, go.Figure]], output_dir: str):
+    def save_plots(self, figs: Dict[str, Union[plt.Figure, go.Figure]], output_dir: str) -> None:
         """Save all plots to specified directory"""
+        if not figs:
+            raise ValueError("Input figures dictionary cannot be empty")
+            
+        os.makedirs(output_dir, exist_ok=True)
+        
         for name, fig in figs.items():
             try:
+                filepath = os.path.join(output_dir, f"{name}")
                 if isinstance(fig, plt.Figure):
-                    fig.savefig(f"{output_dir}/{name}.png")
+                    fig.savefig(f"{filepath}.png")
                 else:  # Plotly figure
-                    fig.write_html(f"{output_dir}/{name}.html")
+                    fig.write_html(f"{filepath}.html")
+                logger.info(f"Successfully saved plot {name}")
             except Exception as e:
                 logger.error(f"Error saving plot {name}: {str(e)}")
                 

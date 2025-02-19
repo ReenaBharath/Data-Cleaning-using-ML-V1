@@ -21,7 +21,7 @@ class DataLoader:
     def _load_config(self, config_path: str) -> Dict:
         """Load configuration from YAML file."""
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
         except Exception as e:
             self.logger.error(f"Error loading config: {str(e)}")
@@ -37,7 +37,7 @@ class DataLoader:
         Returns:
             bool: True if validation passes
         """
-        required_columns = ['text', 'hashtags', 'country_code', 'development_status']
+        required_columns = ['text', 'hashtags', 'place_country_code', 'Developed / Developing']
         missing_columns = [col for col in required_columns if col not in df.columns]
         
         if missing_columns:
@@ -63,24 +63,24 @@ class DataLoader:
         
         try:
             # Load based on file extension
-            if file_path.suffix == '.csv':
-                df = pd.read_csv(file_path)
-            elif file_path.suffix in ['.xlsx', '.xls']:
+            if file_path.suffix.lower() == '.csv':
+                df = pd.read_csv(file_path, encoding='utf-8')
+            elif file_path.suffix.lower() in ['.xlsx', '.xls']:
                 df = pd.read_excel(file_path)
-            elif file_path.suffix == '.json':
+            elif file_path.suffix.lower() == '.json':
                 df = pd.read_json(file_path)
             else:
                 raise ValueError(f"Unsupported file format: {file_path.suffix}")
             
             if validate:
                 if not self.validate_columns(df):
-                    raise ValueError("Data validation failed")
+                    raise ValueError("Data validation failed - missing required columns")
                     
             self.logger.info(f"Successfully loaded {len(df)} records")
             return df
             
         except Exception as e:
-            self.logger.error(f"Error loading data: {str(e)}")
+            self.logger.error(f"Error loading data from {file_path}: {str(e)}")
             raise
             
     def save_data(self,
@@ -99,7 +99,7 @@ class DataLoader:
         
         # Determine format from path if not specified
         if output_format is None:
-            output_format = output_path.suffix.lstrip('.')
+            output_format = output_path.suffix.lstrip('.').lower()
             
         try:
             # Create directory if it doesn't exist
@@ -107,18 +107,18 @@ class DataLoader:
             
             # Save based on format
             if output_format == 'csv':
-                df.to_csv(output_path, index=False)
+                df.to_csv(output_path, index=False, encoding='utf-8')
             elif output_format in ['xlsx', 'xls']:
                 df.to_excel(output_path, index=False)
             elif output_format == 'json':
-                df.to_json(output_path, orient='records')
+                df.to_json(output_path, orient='records', force_ascii=False)
             else:
                 raise ValueError(f"Unsupported output format: {output_format}")
                 
-            self.logger.info(f"Successfully saved data to {output_path}")
+            self.logger.info(f"Successfully saved {len(df)} records to {output_path}")
             
         except Exception as e:
-            self.logger.error(f"Error saving data: {str(e)}")
+            self.logger.error(f"Error saving data to {output_path}: {str(e)}")
             raise
             
     def load_batch(self,
@@ -134,11 +134,14 @@ class DataLoader:
         Returns:
             pd.DataFrame: Combined DataFrame
         """
+        if not file_paths:
+            raise ValueError("No file paths provided")
+            
         dfs = []
         for file_path in file_paths:
             df = self.load_data(file_path, validate=validate)
             dfs.append(df)
             
         combined_df = pd.concat(dfs, ignore_index=True)
-        self.logger.info(f"Successfully combined {len(file_paths)} files")
+        self.logger.info(f"Successfully combined {len(file_paths)} files with total {len(combined_df)} records")
         return combined_df
