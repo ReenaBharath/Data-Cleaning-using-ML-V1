@@ -17,8 +17,9 @@ class DataVisualizer:
     def __init__(self, style: str = 'seaborn'):
         """Initialize visualizer with specified style"""
         plt.style.use(style)
-        
-    def plot_text_length_distribution(self, texts: List[str], title: str = 'Text Length Distribution') -> plt.Figure:
+
+    @staticmethod
+    def plot_text_length_distribution(texts: List[str], title: str = 'Text Length Distribution') -> plt.Figure:
         """Plot distribution of text lengths"""
         if not texts:
             raise ValueError("Input texts list cannot be empty")
@@ -33,7 +34,8 @@ class DataVisualizer:
         
         return fig
         
-    def plot_cleaning_impact(self, original_texts: List[str], cleaned_texts: List[str]) -> plt.Figure:
+    @staticmethod
+    def plot_cleaning_impact(original_texts: List[str], cleaned_texts: List[str]) -> plt.Figure:
         """Visualize the impact of cleaning on text lengths"""
         if len(original_texts) != len(cleaned_texts):
             raise ValueError("Original and cleaned text lists must have same length")
@@ -53,7 +55,9 @@ class DataVisualizer:
         
         return fig
         
-    def create_wordcloud(self, texts: List[str], title: str = 'Word Cloud') -> plt.Figure:
+    @staticmethod
+    def create_wordcloud(
+            texts: List[str], title: str = 'Word Cloud') -> plt.Figure:
         """Generate word cloud from texts"""
         if not texts:
             raise ValueError("Input texts list cannot be empty")
@@ -67,8 +71,9 @@ class DataVisualizer:
         ax.set_title(title)
         
         return fig
-        
-    def plot_hashtag_frequency(self, hashtags: List[str], top_n: int = 20) -> go.Figure:
+
+    @staticmethod
+    def plot_hashtag_frequency(hashtags: List[str], top_n: int = 20) -> go.Figure:
         """Plot frequency distribution of hashtags"""
         if not hashtags:
             raise ValueError("Input hashtags list cannot be empty")
@@ -85,8 +90,9 @@ class DataVisualizer:
                     labels={'x': 'Hashtag', 'y': 'Frequency'})
         
         return fig
-        
-    def plot_country_distribution(self, country_codes: List[str]) -> go.Figure:
+
+    @staticmethod
+    def plot_country_distribution(country_codes: List[str]) -> go.Figure:
         """Plot geographical distribution of country codes"""
         if not country_codes:
             raise ValueError("Input country codes list cannot be empty")
@@ -107,8 +113,9 @@ class DataVisualizer:
         )
         
         return fig
-        
-    def plot_development_status_distribution(self, statuses: List[str]) -> go.Figure:
+
+    @staticmethod
+    def plot_development_status_distribution(statuses: List[str]) -> go.Figure:
         """Plot distribution of development statuses"""
         if not statuses:
             raise ValueError("Input statuses list cannot be empty")
@@ -120,8 +127,9 @@ class DataVisualizer:
                     title='Development Status Distribution')
         
         return fig
-        
-    def plot_cleaning_metrics(self, metrics: Dict[str, float]) -> go.Figure:
+
+    @staticmethod
+    def plot_cleaning_metrics(metrics: Dict[str, float]) -> go.Figure:
         """Visualize cleaning quality metrics"""
         if not metrics:
             raise ValueError("Input metrics dictionary cannot be empty")
@@ -143,8 +151,10 @@ class DataVisualizer:
         )
         
         return fig
-        
-    def plot_anomaly_detection_results(self, texts: List[str], anomaly_scores: np.ndarray) -> go.Figure:
+
+
+    @staticmethod
+    def plot_anomaly_detection_results(texts: List[str], anomaly_scores: np.ndarray) -> go.Figure:
         """Visualize anomaly detection results"""
         if len(texts) != len(anomaly_scores):
             raise ValueError("Number of texts must match number of anomaly scores")
@@ -166,8 +176,9 @@ class DataVisualizer:
                         labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'})
         
         return fig
-        
-    def plot_clustering_results(self, texts: List[str], cluster_labels: np.ndarray) -> go.Figure:
+
+    @staticmethod
+    def plot_clustering_results(texts: List[str], cluster_labels: np.ndarray) -> go.Figure:
         """Visualize clustering results"""
         if len(texts) != len(cluster_labels):
             raise ValueError("Number of texts must match number of cluster labels")
@@ -189,8 +200,8 @@ class DataVisualizer:
                         labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'})
         
         return fig
-        
-    def save_plots(self, figs: Dict[str, Union[plt.Figure, go.Figure]], output_dir: str) -> None:
+    @staticmethod
+    def save_plots(figs: Dict[str, Union[plt.Figure, go.Figure]], output_dir: str) -> None:
         """Save all plots to specified directory"""
         if not figs:
             raise ValueError("Input figures dictionary cannot be empty")

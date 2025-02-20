@@ -49,10 +49,13 @@ class DataPreprocessor:
         # Convert to lowercase if specified in config
         if self.config.get('cleaning_params', {}).get('text', {}).get('normalize_case', False):
             text = text.lower()
-            
+
         # Remove URLs if specified
         if self.config.get('cleaning_params', {}).get('text', {}).get('remove_urls', False):
-            text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
+            text = re.sub(
+                r'https?://(?:[a-zA-Z0-9$\-_@.&+!*(),]|%[0-9a-fA-F]{2})+',
+                '',
+                text)
             
         # Remove RT prefix if specified
         if self.config.get('cleaning_params', {}).get('text', {}).get('remove_rt', False):

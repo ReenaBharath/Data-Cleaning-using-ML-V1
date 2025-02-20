@@ -1,75 +1,96 @@
-# Model Configuration Parameters
-model_params:
-  # General settings
-  device: 'cuda'  # 'cuda' or 'cpu'
-  seed: 42
-  
-  # Training parameters
-  batch_size: 32  # Matches cleaning_config batch_size
-  max_length: 1000  # Matches cleaning_config max_length
-  learning_rate: 2e-5
-  num_epochs: 5  # Increased for better model convergence
-  warmup_steps: 500
-  weight_decay: 0.01
-  gradient_accumulation_steps: 1
-  
-  # Model specific parameters
-  language_detection:
-    model_name: "papluca/xlm-roberta-base-language-detection"
-    threshold: 0.8  # Matches cleaning_config language_confidence threshold
-    cache_dir: "./models/cache/lang_detection"
+# Data Cleaning Configuration Parameters
+cleaning_params:
+  # Text cleaning parameters
+  text:
+    min_length: 10
+    max_length: 1000
+    language: 'en'
+    remove_urls: true
+    remove_rt: true
+    remove_mentions: true
+    remove_html: true
+    normalize_case: true
+    handle_emojis: "remove"  # Options: remove, keep, replace
+    handle_numbers: "keep"   # Options: remove, keep, replace_words
     
-  text_normalization:
-    model_name: "oliverguhr/spelling-correction-english-base"
-    threshold: 0.7
-    cache_dir: "./models/cache/text_norm"
-    min_words: 3  # Matches cleaning_config validation min_words
+  # Hashtag cleaning
+  hashtags:
+    min_length: 2
+    max_length: 50
+    remove_duplicates: true``
+    standardize_case: true
+    remove_special_chars: true
+    max_hashtags_per_entry: 10
+    
+  # Country code standardization
+  country_code:
+    case: "upper"
+    handle_missing: "UNK"  # Changed to match test cases
+    valid_codes: [
+      "US", "UK", "IN", "CN", "JP", "DE", "FR", "IT", "BR", "CA",
+      "AU", "RU", "KR", "ES", "MX", "ID", "TR", "SA", "ZA", "NG"
+    ]
+    
+  # Development status standardization
+  development_status:
+    categories: ["Developed", "Developing"]
+    default_value: "Unknown"
+    confidence_threshold: 0.8
+    
+# Data validation rules
+validation:
+  text:
+    required: true
+    allow_empty: false
+    min_words: 3
+    
+  hashtags:
+    required: false
+    allow_empty: true
+    
+  country_code:
+    required: true
+    allow_empty: false
     
   development_status:
-    model_name: "distilbert-base-uncased-finetuned-development"
-    num_labels: 2  # For "Developed" and "Developing" categories
-    cache_dir: "./models/cache/dev_status"
-    confidence_threshold: 0.8  # Matches cleaning_config threshold
-    categories: ["Developed", "Developing"]  # Matches cleaning_config categories
+    required: true
+    allow_empty: false
     
-# Optimization settings  
-optimization:
-  use_mixed_precision: true
-  use_multiprocessing: true  # Matches cleaning_config
-  num_workers: 4  # Matches cleaning_config
-  use_gradient_checkpointing: true
-  max_grad_norm: 1.0
+# Processing options
+processing:
+  batch_size: 32
+  num_workers: 4
+  use_multiprocessing: true
   
-# Checkpoint settings
-checkpoint:
-  save_strategy: "epoch"
-  save_steps: 500
-  save_total_limit: 2
-  load_best_model_at_end: true
-  save_interim: true  # Matches cleaning_config
+# Output settings
+output:
+  save_interim: true
+  save_format: "csv"
+  compression: null  # Options: null, "gzip", "bz2", "zip"
+  include_metadata: true
   
-# Logging settings
-logging:
-  logging_dir: "./logs"
-  logging_steps: 100
-  log_level: "info"  # Matches cleaning_config
-  save_cleaning_stats: true  # Matches cleaning_config
-  report_format: ["csv", "json"]  # Matches cleaning_config
+# Logging and reporting
+reporting:
+  generate_report: true
+  save_cleaning_stats: true
+  log_level: "info"
+  report_format: ["csv", "json"]
   
-# Evaluation settings
-evaluation:
-  eval_strategy: "epoch"
-  eval_steps: 500
-  metric_for_best_model: "accuracy"
-  greater_is_better: true
-  quality_checks:
-    missing_values_threshold: 0.1  # Matches cleaning_config
-    min_unique_words: 5  # Matches cleaning_config
-    max_repetition: 0.3  # Matches cleaning_config
+# Quality checks
+quality_checks:
+  perform_checks: true
+  checks:
+    missing_values:
+      threshold: 0.1
+    text_quality:
+      min_unique_words: 5
+      max_repetition: 0.3
+    language_confidence:
+      min_threshold: 0.8
     
-# Early stopping
-early_stopping:
-  enabled: true
-  patience: 3
-  min_delta: 0.001
-  error_threshold: 0.1  # Matches cleaning_config
+# Error handling
+error_handling:
+  log_errors: true
+  error_threshold: 0.1
+  stop_on_critical: true
+  backup_original: true

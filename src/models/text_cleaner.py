@@ -19,7 +19,9 @@ class TextCleaner:
         self.tfidf = TfidfVectorizer(max_features=1000)
         self.dbscan = DBSCAN(eps=0.5, min_samples=5)
         
-    def clean_text(self, text: str) -> str:
+    @staticmethod
+    def clean_text(
+            text: str) -> str:
         """Clean text content by removing invalid symbols, normalizing case, etc."""
         if not isinstance(text, str):
             return ""
@@ -41,7 +43,9 @@ class TextCleaner:
         
         return text.strip()
     
-    def is_english(self, text: str) -> bool:
+    @staticmethod
+    def is_english(
+            text: str) -> bool:
         """Check if text is in English."""
         if not isinstance(text, str) or not text.strip():
             return False
@@ -62,7 +66,9 @@ class TextCleaner:
             pass
         return text
         
-    def clean_hashtags(self, hashtags: Union[str, List[str]]) -> str:
+    @staticmethod
+    def clean_hashtags(
+            hashtags: Union[str, List[str]]) -> str:
         """Clean and standardize hashtags."""
         if isinstance(hashtags, list):
             hashtags = ' '.join(hashtags)
@@ -90,7 +96,9 @@ class TextCleaner:
                 
         return ' '.join(cleaned_hashtags)
         
-    def clean_country_code(self, code: str) -> str:
+    @staticmethod
+    def clean_country_code(
+            code: str) -> str:
         """Standardize country codes."""
         if not isinstance(code, str) or not code:
             return "UNK"
@@ -115,7 +123,9 @@ class TextCleaner:
         except:
             return "UNK"
             
-    def clean_development_status(self, status: str) -> str:
+    @staticmethod
+    def clean_development_status(
+            status: str) -> str:
         """Standardize development status."""
         if not isinstance(status, str):
             return "Unknown"

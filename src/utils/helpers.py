@@ -40,9 +40,11 @@ def validate_hashtags(hashtags: Union[str, List[str]]) -> bool:
     
     # Check if each tag is valid
     for tag in tags:
-        if not re.match(r'^#?[\w\d]+$', tag):
+        if not re.match(
+                r'^#?[\\w]+$',
+                tag):
             return False
-            
+
     return True
 
 def validate_country_code(code: str) -> bool:

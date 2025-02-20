@@ -1,3 +1,4 @@
+
 # Data Cleaning using ML
 
 ## Overview
@@ -63,7 +64,7 @@ pip install -r requirements.txt
 3.Configure the project:
 
 ```bash
-cp configs/config.yaml.example configs/config.yaml
+cp configs/cleaning_config.yaml configs/model_config.yaml 
 ```
 
 4.Run the main script:
