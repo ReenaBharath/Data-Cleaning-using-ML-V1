@@ -33,6 +33,30 @@ ENV/
 .project
 .pydevproject
 .settings/
+<<<<<<< HEAD
+=======
+*.sublime-workspace
+*.sublime-project
+*.iml
+.classpath
+
+# Data files
+data/*
+!data/.gitkeep
+
+# Model files
+models/*
+!models/.gitkeep
+*.pth
+*.pt
+*.bin
+*.h5
+*.pkl
+*.joblib
+*.onnx
+*.tflite
+*.mlmodel
+>>>>>>> 0def56c304088040c47092bbde54cb6a2a824200
 
 # Jupyter Notebook
 .ipynb_checkpoints
