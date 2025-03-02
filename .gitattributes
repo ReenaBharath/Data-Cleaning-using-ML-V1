@@ -1,1 +1,69 @@
-.csv filter=lfs diff=lfs merge=lfs -text
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python files
+*.py text diff=python
+*.pyw text diff=python
+*.pyi text diff=python
+
+# Documentation
+*.md text diff=markdown
+*.rst text
+*.txt text
+*.pdf binary
+
+# Jupyter notebooks
+*.ipynb text
+
+# Data files
+*.csv text
+*.json text
+*.yaml text
+*.yml text
+
+# Configuration files
+*.cfg text
+*.ini text
+*.conf text
+
+# Graphics
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Scripts
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Docker
+Dockerfile text
+*.dockerignore text
+docker-compose.yml text
+
+# Git files
+.gitattributes text
+.gitignore text
+.gitconfig text
+
+# Python-specific
+requirements.txt text
+setup.py text
+setup.cfg text
+pyproject.toml text
+MANIFEST.in text
+
+# Documentation
+LICENSE text
+*.md text
+*.rst text
+*.txt text
+
+# IDE
+*.sublime-project text
+*.sublime-workspace text
+.idea/* text
+.vscode/* text

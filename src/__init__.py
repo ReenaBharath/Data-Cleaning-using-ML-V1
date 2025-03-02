@@ -1,22 +1,20 @@
-from .data.loader import DataLoader
-from .data.preprocessor import DataPreprocessor
-from .models.trainer import ModelTrainer
-from .visualization.visualizer import DataVisualizer
-from .utils.helpers import (
-    validate_text,
-    validate_hashtags,
-    validate_country_code
+"""Zero Waste Data Cleaning Project."""
+
+import logging
+import os
+
+# Set up logging
+log_file = os.path.join('logs', 'pipeline.log')
+os.makedirs('logs', exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
 )
 
-__all__ = [
-    'DataLoader',
-    'DataPreprocessor',
-    'ModelTrainer', 
-    'DataVisualizer',
-    'validate_text',
-    'validate_hashtags',
-    'validate_country_code'
-]
-
-# Version of the package
-__version__ = '0.1.0'  # Starting with 0.1.0 as initial version
+logger = logging.getLogger('src')
+logger.info('Initializing Zero Waste Data Cleaning Project v1.0.0')

@@ -1,90 +1,173 @@
+# Zero Waste Data Cleaning Pipeline v1.0.0
 
-# Data Cleaning using ML
+A high-performance machine learning pipeline for cleaning and analyzing large environmental text datasets, featuring parallel processing, advanced ML components, and comprehensive data quality visualization.
 
 ## Overview
 
-This project implements a comprehensive machine learning-based data cleaning pipeline designed for processing and standardizing text data. The pipeline handles multiple data types including text content, hashtags, country codes, and development status indicators. Using advanced ML techniques, it cleans and standardizes data while preserving meaningful information and semantic content.
+This pipeline efficiently processes large text datasets related to zero waste initiatives using:
 
-## Features
+- Parallel text processing with multicore CPU support
+- Fast RandomForest classifiers for initial predictions
+- Lazy-loaded transformer models for deep analysis
+- Memory-optimized batch processing
+- Real-time progress tracking and visualization
 
-- Text Cleaning and Normalization
-  - BERT-based models for semantic preservation
-  - Noise and special character removal
-  - Standardized text formatting
-  - Multilingual support via XLM-RoBERTa
-  - Spelling correction and text normalization
-  
-- Advanced ML Capabilities
-  - Anomaly Detection: Isolation Forest for identifying outliers and unusual patterns
-  - Text Clustering: DBSCAN with BERT embeddings for grouping similar content
-  - Language Detection: XLM-RoBERTa for accurate language identification
-  - Sentiment Analysis: DistilBERT for text sentiment classification
-  
-- Data Standardization
-  - Hashtag cleaning and normalization using custom NLP rules
-  - Country code validation against ISO 3166 standards
-  - Development status classification using DistilBERT
-  
-- Analysis and Reporting
-  - Automated data quality metrics and reporting
-  - Statistical analysis of cleaned data
-  - Interactive visualizations using Plotly and Matplotlib
-  - Detailed cleaning logs and transformation tracking
+## Key Features
 
-## Project Structure
+### Text Processing
 
-```markdown
-Data_Cleaning_using_ML_V1/
-├── data/
-│   ├── raw/                     # Raw input data
-│   ├── interim/                 # Intermediate data
-│   └── processed/               # Final cleaned data
-├── models/                      # Trained models
-├── notebooks/                   # Jupyter notebooks
-├── src/                         # Source code
-├── tests/                       # Unit tests
-├── outputs/                     # Generated outputs
-└── configs/                     # Configuration files
-```
+- Advanced text cleaning and standardization
+- Language detection with confidence scoring
+- Hashtag extraction and normalization
+- URL and HTML removal
+- Special character handling
+- Emoji removal
+
+### ML Components
+
+- Anomaly detection using Isolation Forest
+- Text clustering with DBSCAN
+- Sentiment analysis using DistilBERT
+- Topic classification using BART Zero-Shot
+- Fast RandomForest classifiers for quick predictions
+
+### Metadata Processing
+
+- Country code validation and standardization
+- Development status classification
+- Metadata cleaning and normalization
+
+### Performance Optimizations
+
+- Parallel processing with ProcessPoolExecutor
+- Lazy loading of heavy transformer models
+- Memory-efficient batch processing
+- GPU acceleration support (when available)
+- Regular memory cleanup
+
+### Progress Tracking
+
+- Real-time progress bars for each stage
+- Detailed logging with timestamps
+- Memory usage monitoring
+- Processing speed metrics
+- Data quality statistics
+
+### Visualization
+
+- Text length distribution analysis
+- Sentiment distribution plots
+- Topic distribution analysis
+- Anomaly detection visualization
+- Cluster distribution plots
 
 ## Installation
 
-1.Clone the repository:
+1. Clone the repository:
 
 ```bash
-git clone https://github.com/ReenaBharath/Data-Cleaning-using-ML-V1.git
+git clone https://github.com/ReenaBharath/Data-Cleaning-using-ML-V1-4.git
+cd Data-Cleaning-using-ML-V1-4
 ```
 
-2.Install dependencies:
+2.Create a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
+```
+
+3.Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3.Configure the project:
+## Usage
 
-```bash
-cp configs/cleaning_config.yaml configs/model_config.yaml 
-```
+1. Prepare your data:
+   - Place your input CSV file in `data/raw/zero_waste.csv`
+   - Required columns: 'text', 'hashtags', 'country', 'development_status'
 
-4.Run the main script:
+2. Run the pipeline:
 
 ```bash
 python main.py
 ```
 
-## Configuration
+3.Find outputs in:
 
-The project uses a configuration file (config.yaml) to manage various settings including data paths, model parameters, and output options.
+- `data/processed/cleaned_zero_waste.csv`: Cleaned and processed data
+- `data/reports/`: Data quality visualizations and reports
+
+## Project Structure
+
+```tree
+Data-Cleaning-using-ML-V1-4/
+├── data/
+│   ├── raw/                # Input data
+│   ├── processed/          # Cleaned data
+│   └── reports/            # Quality reports
+├── src/
+│   ├── core/               # Core components
+│   │   ├── preprocessing/  # Text processors
+│   │   └── models/         # ML components
+│   └── visualization/      # Visualization tools
+├── main.py                 # Pipeline entry point
+├── requirements.txt        # Dependencies
+└── README.md               # Documentation
+```
+
+## Output Files
+
+1. Processed Data (`data/processed/cleaned_zero_waste.csv`):
+   - cleaned_text: Cleaned and standardized text
+   - hashtags: Extracted and normalized hashtags
+   - country_code: Standardized ISO country codes
+   - development_status: Standardized development status
+   - is_anomaly: Anomaly detection results
+   - cluster: Cluster assignments
+   - sentiment: Sentiment analysis results
+   - topic: Topic classification results
+
+2. Quality Reports (`data/reports/`):
+   - Text length distribution plots
+   - Sentiment distribution analysis
+   - Topic distribution visualization
+   - Anomaly detection results
+   - Cluster distribution plots
+   - Detailed summary statistics
+
+## Performance
+
+- Processing Speed: ~2000-3000 rows/second (CPU)
+- Memory Usage: ~2-4GB for 100k rows
+- GPU Acceleration: Automatic when available
+- Parallel Processing: Uses all available CPU cores
+
+## Requirements
+
+- Python 3.10+
+- 8GB+ RAM (16GB recommended for large datasets)
+- CUDA-compatible GPU (optional)
+- See requirements.txt for package versions
+
+## Notes
+
+- The pipeline automatically uses GPU if available
+- Memory usage scales with chunk_size (default: 50,000 rows)
+- First run includes model downloads (~2GB disk space)
+- Progress bars show real-time status for all stages
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-## Contact
-
-For questions or feedback, please contact me at [xbhar002@studenti.czu.cz].
+This project is licensed under the MIT License.

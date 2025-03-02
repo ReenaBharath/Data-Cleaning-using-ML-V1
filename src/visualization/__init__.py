@@ -1,8 +1,5 @@
-from .visualizer import DataVisualizer
+"""Visualization components for data quality analysis."""
 
-__all__ = [
-    'DataVisualizer'
-]
+from .data_quality import DataQualityVisualizer
 
-# Version of the visualization package
-__version__ = '0.1.0'  # Starting with 0.1.0 as initial version since package is new
+__all__ = ['DataQualityVisualizer']
