@@ -33,16 +33,10 @@ ENV/
 .project
 .pydevproject
 .settings/
-<<<<<<< HEAD
-=======
 *.sublime-workspace
 *.sublime-project
 *.iml
 .classpath
-
-# Data files
-data/*
-!data/.gitkeep
 
 # Model files
 models/*
@@ -56,19 +50,10 @@ models/*
 *.onnx
 *.tflite
 *.mlmodel
->>>>>>> 0def56c304088040c47092bbde54cb6a2a824200
 
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
-
-# Data
-data/raw/*
-!data/raw/.gitkeep
-data/interim/*
-!data/interim/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
 
 # Models and outputs
 outputs/models/*
