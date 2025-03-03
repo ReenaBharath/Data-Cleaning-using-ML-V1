@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Optional, List
+from typing import Optional, List, Set
 from langdetect import detect_langs
 import html
 from bs4 import BeautifulSoup
@@ -17,11 +17,11 @@ class AdvancedProcessor:
         """Initialize the advanced processor."""
         # Initialize regex patterns
         self.url_pattern = re.compile(
-            r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+            r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+|(?:www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?://[^\s]+)'
         )
         self.html_pattern = re.compile('<.*?>')
         self.mention_pattern = re.compile(r'@[\w\d_]+')
-        self.rt_pattern = re.compile(r'(?:^|\s)(?:RT|RI)\s*@', re.IGNORECASE)  # Updated to catch RT/RI anywhere after space
+        self.rt_pattern = re.compile(r'(?i)(?:^|\s)(?:RT|RI)\s*@')  # Case insensitive RT/RI
         self.special_chars_pattern = re.compile(r'[^a-zA-Z0-9\s@]')
         self.multiple_spaces_pattern = re.compile(r'\s+')
         self.hashtag_pattern = re.compile(r'#[\w\d_]+')
@@ -33,6 +33,8 @@ class AdvancedProcessor:
             u"\U00002702-\U000027B0"
             u"\U000024C2-\U0001F251"
             "]+", flags=re.UNICODE)
+        self.non_english_chars = re.compile(r'[^\x00-\x7F]+')  # Remove non-ASCII chars
+        self.processed_texts: Set[str] = set()  # For duplicate detection
     
     def process_text(self, text: str, confidence_threshold: float = 0.8) -> Optional[str]:
         """Process text with essential cleaning and validation.
@@ -45,7 +47,7 @@ class AdvancedProcessor:
             Processed text or None if invalid
         """
         try:
-            # Basic validation
+            # Basic validation and empty check
             if not isinstance(text, str) or not text.strip():
                 return None
             
@@ -53,38 +55,29 @@ class AdvancedProcessor:
             text = html.unescape(text)
             text = BeautifulSoup(text, "html.parser").get_text()
             
-            # Language detection
-            try:
-                langs = detect_langs(text)
-                if langs and langs[0].prob >= confidence_threshold:
-                    if langs[0].lang != 'en':
-                        return None  # Skip non-English text
-                else:
-                    return None
-            except:
-                return None
-            
             # Basic cleaning
             text = text.strip()
             
-            # Remove URLs
+            # Remove URLs and links
             text = self.url_pattern.sub('', text)
             
             # Extract mentions to preserve them
             mentions = self.mention_pattern.findall(text)
             
-            # Remove RT/RI prefix and any RT/RI in the text
-            # This line removes RT/RI prefix and any RT/RI in the text
+            # Remove RT/RI prefix and any RT/RI in the text (case insensitive)
             text = self.rt_pattern.sub('', text)
             
             # Remove emojis
             text = self.emoji_pattern.sub('', text)
             
-            # Remove hashtags
+            # Remove hashtags (stored separately)
             text = self.hashtag_pattern.sub('', text)
             
-            # Normalize unicode characters
-            text = unicodedata.normalize('NFKC', text)
+            # Remove non-English/non-ASCII characters
+            text = self.non_english_chars.sub('', text)
+            
+            # Normalize unicode to closest ASCII representation
+            text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
             
             # Clean special characters while preserving @
             text = self.special_chars_pattern.sub(' ', text)
@@ -100,6 +93,19 @@ class AdvancedProcessor:
             # Length validation
             if len(text) < 10:
                 return None
+                
+            # Language detection
+            try:
+                langs = detect_langs(text)
+                if not langs or langs[0].prob < confidence_threshold or langs[0].lang != 'en':
+                    return None  # Skip non-English text or low confidence
+            except:
+                return None
+            
+            # Duplicate check
+            if text.lower() in self.processed_texts:
+                return None
+            self.processed_texts.add(text.lower())
             
             return text
             
@@ -109,4 +115,10 @@ class AdvancedProcessor:
 
     def process_batch(self, texts: List[str]) -> List[Optional[str]]:
         """Process a batch of texts."""
+        # Clear duplicate cache for new batch
+        self.processed_texts.clear()
         return [self.process_text(text) for text in texts]
+
+    def clear_cache(self):
+        """Clear the duplicate detection cache."""
+        self.processed_texts.clear()
