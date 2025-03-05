@@ -1,337 +1,367 @@
-"""ML components for text analysis with parallel processing optimizations."""
+"""ML components with optimized performance."""
 
-import os
-import gc
-import time
-import warnings
 import logging
 import numpy as np
-import torch
-from typing import List, Dict, Any, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from sklearn.feature_extraction.text import TfidfVectorizer
+import scipy.sparse
+from typing import List, Dict, Any, Optional
+from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from sklearn.ensemble import IsolationForest
-from sklearn.cluster import MiniBatchKMeans
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from sklearn.cluster import KMeans, MiniBatchKMeans
+from sklearn.linear_model import SGDOneClassSVM
+from transformers import pipeline
+import torch
+import gc
+from tqdm import tqdm
 import psutil
-import math
-from collections import defaultdict
-import traceback
-import pickle
-from datetime import datetime
-from functools import partial
-import multiprocessing
-
-# Suppress transformer warnings
-warnings.filterwarnings('ignore', category=UserWarning)
-logging.getLogger("transformers").setLevel(logging.ERROR)
+import os
+import threading
+import time
+from timeout_decorator import timeout
 
 logger = logging.getLogger(__name__)
 
 class MLComponents:
-    """ML components for text analysis with parallel processing."""
+    """ML components with optimized performance."""
     
-    def __init__(self):
-        """Initialize ML components with parallel processing optimizations."""
-        self.device = torch.device("cpu")
-        logger.info("Initializing optimized ML pipeline...")
-        
-        # Parallel processing settings
-        self.n_jobs = min(multiprocessing.cpu_count(), 8)  # Use up to 8 cores
-        self.chunk_size = 5000  # Process 5000 texts at once
-        self.batch_size = 64    # Transformer batch size
-        
-        # Initialize TF-IDF (optimized but maintaining features)
-        self.vectorizer = TfidfVectorizer(
-            max_features=500,    # Keep features for accuracy
-            stop_words='english',
-            sublinear_tf=True,
-            dtype=np.float32,    # Memory efficient
-            min_df=2,            # Remove very rare words
-            max_df=0.95,         # Remove very common words
-            norm='l2'
-        )
-
-        # Initialize models with parallel processing
-        self.anomaly_detector = IsolationForest(
-            n_estimators=50,     # Keep trees for accuracy
-            contamination=0.1,
-            random_state=42,
-            n_jobs=self.n_jobs   # Parallel processing
-        )
-
-        self.clusterer = MiniBatchKMeans(
-            n_clusters=3,
-            batch_size=1024,     # Large batch for speed
-            random_state=42
-        )
-
-        # Initialize sentiment analysis (lazy loading)
-        self.tokenizer = None
-        self.sentiment_model = None
-        
-        # Checkpointing
-        self.checkpoint_dir = "checkpoints"
-        os.makedirs(self.checkpoint_dir, exist_ok=True)
-        self.checkpoint_frequency = 10  # Save every 10 chunks
-        
-    def _load_sentiment_model(self):
-        """Lazy load sentiment model when needed."""
-        if self.tokenizer is None:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    'distilbert-base-uncased',
-                    model_max_length=128
-                )
-                self.sentiment_model = AutoModelForSequenceClassification.from_pretrained(
-                    'distilbert-base-uncased',
-                    num_labels=3
-                )
-            self.sentiment_model.eval()
-            
-    def process_batch(self, texts: List[str], batch_num: int = 0) -> Dict[str, Any]:
-        """Process a batch of texts."""
+    def __init__(self, config: Optional[Dict] = None):
+        """Initialize ML components with optimized settings."""
         try:
-            start_time = time.time()
-            
-            # Convert texts to vectors
-            vectors = self.vectorizer.transform(texts)
-            dense_vectors = vectors.toarray()
-            
-            # Run anomaly detection
-            anomalies = self.anomaly_detector.predict(dense_vectors)
-            
-            # Run clustering
-            clusters = self.clusterer.predict(vectors)
-            
-            # Get sentiments
-            self._load_sentiment_model()
-            sentiments = []
-            
-            for i in range(0, len(texts), self.batch_size):
-                batch_texts = texts[i:i + self.batch_size]
-                inputs = self.tokenizer(
-                    batch_texts,
-                    padding=True,
-                    truncation=True,
-                    max_length=128,
-                    return_tensors="pt"
-                )
-                
-                with torch.no_grad():
-                    outputs = self.sentiment_model(**inputs)
-                    predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-                    batch_sentiments = predictions.argmax(dim=-1).tolist()
-                    sentiments.extend([self._convert_sentiment_label(s) for s in batch_sentiments])
-            
-            # Combine results
-            results = []
-            for i in range(len(texts)):
-                results.append({
-                    'sentiment': sentiments[i],
-                    'is_anomaly': bool(anomalies[i] == -1),
-                    'cluster': int(clusters[i])
-                })
-            
-            duration = time.time() - start_time
-            logger.info(f"Batch {batch_num} processed in {duration:.1f}s")
-            
-            return {'results': results}
-            
-        except Exception as e:
-            logger.error(f"Error in batch processing: {str(e)}")
-            traceback.print_exc()
-            return {'results': []}
-            
-    def process_texts_parallel(self, texts: List[str]) -> List[Dict[str, Any]]:
-        """Process texts using parallel processing."""
-        try:
-            # Convert texts to vectors (parallel)
-            vectors = self.vectorizer.transform(texts)
-            dense_vectors = vectors.toarray()
-            
-            # Run anomaly detection (parallel)
-            anomalies = self.anomaly_detector.predict(dense_vectors)
-            
-            # Run clustering (parallel)
-            clusters = self.clusterer.predict(vectors)
-            
-            # Process sentiment in parallel batches
-            self._load_sentiment_model()  # Lazy load
-            
-            sentiments = []
-            with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
-                # Process sentiment in batches
-                for i in range(0, len(texts), self.batch_size):
-                    batch_texts = texts[i:i + self.batch_size]
-                    future = executor.submit(self._process_sentiment_batch, batch_texts)
-                    sentiments.extend(future.result())
-                    
-                    # Log progress
-                    if i % (self.batch_size * 5) == 0:
-                        progress = (i + self.batch_size) / len(texts) * 100
-                        logger.info(f"Sentiment analysis: {progress:.1f}% complete")
-            
-            # Combine results
-            results = []
-            for i in range(len(texts)):
-                results.append({
-                    'sentiment': sentiments[i],
-                    'is_anomaly': anomalies[i] == -1,
-                    'cluster': int(clusters[i])
-                })
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error in parallel processing: {str(e)}")
-            traceback.print_exc()
-            return [{'sentiment': 'NEUTRAL', 'is_anomaly': False, 'cluster': -1}] * len(texts)
-            
-    def _process_sentiment_batch(self, texts: List[str]) -> List[str]:
-        """Process a batch of texts for sentiment."""
-        try:
-            inputs = self.tokenizer(
-                texts,
-                padding=True,
-                truncation=True,
-                max_length=128,
-                return_tensors="pt"
-            )
-            
-            with torch.no_grad():
-                outputs = self.sentiment_model(**inputs)
-                predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-                labels = predictions.argmax(dim=-1).tolist()
-                
-            return [self._convert_sentiment_label(label) for label in labels]
-            
-        except Exception as e:
-            logger.error(f"Error in sentiment batch: {str(e)}")
-            return ['NEUTRAL'] * len(texts)
-            
-    def _convert_sentiment_label(self, label: int) -> str:
-        """Convert numeric sentiment to string."""
-        return {0: 'NEGATIVE', 1: 'NEUTRAL', 2: 'POSITIVE'}.get(label, 'NEUTRAL')
-        
-    def process_chunk(self, texts: List[str], chunk_id: int) -> List[Dict[str, Any]]:
-        """Process a chunk of texts with progress tracking."""
-        try:
-            start_time = time.time()
-            logger.info(f"Processing chunk {chunk_id} ({len(texts)} texts)")
-            
-            # Process in parallel
-            results = self.process_texts_parallel(texts)
-            
-            # Log metrics
-            duration = time.time() - start_time
-            texts_per_second = len(texts) / duration
-            logger.info(f"Chunk {chunk_id} completed: {texts_per_second:.1f} texts/second")
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error processing chunk {chunk_id}: {str(e)}")
-            traceback.print_exc()
-            return [{'sentiment': 'NEUTRAL', 'is_anomaly': False, 'cluster': -1}] * len(texts)
-            
-    def fit_models(self, texts: List[str]) -> None:
-        """Fit all ML models on input texts."""
-        try:
-            logger.info(f"Fitting TF-IDF vectorizer on {len(texts):,} texts...")
-            start_time = time.time()
-            
-            # Fit the vectorizer
-            self.vectorizer.fit(texts)
-            
-            # Log vocabulary stats
-            logger.info(f"Vocabulary size: {len(self.vectorizer.vocabulary_)} terms")
-            logger.info(f"Vectorizer fitted in {time.time() - start_time:.1f}s")
-            
-            # Convert texts to vectors
-            logger.info("Converting texts to vectors...")
-            vectors = self.vectorizer.transform(texts)
-            
-            # Convert to dense for anomaly detection
-            logger.info("Converting to dense format for anomaly detection...")
-            dense_vectors = vectors.toarray()
-            
-            # Fit anomaly detector
-            logger.info("Fitting anomaly detector...")
-            start_time = time.time()
-            self.anomaly_detector.fit(dense_vectors)
-            logger.info(f"Anomaly detector fitted in {time.time() - start_time:.1f}s")
-            
-            # Fit clusterer
-            logger.info("Fitting clusterer...")
-            start_time = time.time()
-            self.clusterer.fit(vectors)
-            logger.info(f"Clusterer fitted in {time.time() - start_time:.1f}s")
-            
-        except Exception as e:
-            logger.error(f"Error fitting vectorizer: {str(e)}")
-            raise
-
-    def save_checkpoint(self, chunk_id: int, results: List[Dict[str, Any]]) -> None:
-        """Save processing checkpoint."""
-        try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            checkpoint_path = os.path.join(
-                self.checkpoint_dir, 
-                f"checkpoint_chunk_{chunk_id}_{timestamp}.pkl"
-            )
-            
-            # Save checkpoint data
-            checkpoint_data = {
-                'chunk_id': chunk_id,
-                'results': results,
-                'vectorizer': self.vectorizer,
-                'anomaly_detector': self.anomaly_detector,
-                'clusterer': self.clusterer,
-                'timestamp': timestamp
+            # Default configuration
+            default_config = {
+                'batch_size': 32,
+                'n_clusters': 5,
+                'contamination': 0.1,
+                'random_state': 42,
+                'min_topic_confidence': 0.4,
+                'use_gpu': torch.cuda.is_available(),
+                'max_workers': 4,
+                'chunk_size': 500,
+                'memory_threshold': 85,
+                'cache_vectors': True,
+                'vector_cache_size': 10000,
+                'model_batch_size': 16
             }
             
-            with open(checkpoint_path, 'wb') as f:
-                pickle.dump(checkpoint_data, f)
+            # Update defaults with provided config
+            self.config = default_config.copy()
+            if config:
+                self.config.update(config)
             
-            logger.info(f"Saved checkpoint at chunk {chunk_id}")
+            # Set device based on config and availability
+            self.use_gpu = self.config['use_gpu'] and torch.cuda.is_available()
+            self.device = 'cuda' if self.use_gpu else 'cpu'
             
-            # Clean old checkpoints (keep last 3)
-            self._clean_old_checkpoints()
-            
-        except Exception as e:
-            logger.error(f"Error saving checkpoint: {str(e)}")
-            
-    def _clean_old_checkpoints(self):
-        """Keep only the last 3 checkpoints."""
-        try:
-            checkpoints = sorted(
-                [f for f in os.listdir(self.checkpoint_dir) if f.endswith('.pkl')],
-                key=lambda x: os.path.getmtime(os.path.join(self.checkpoint_dir, x))
+            # Initialize basic components
+            self.vectorizer = TfidfVectorizer(
+                max_features=1000,
+                stop_words='english',
+                ngram_range=(1, 2),
+                dtype=np.float32
             )
             
-            # Remove all but the last 3
-            for checkpoint in checkpoints[:-3]:
-                os.remove(os.path.join(self.checkpoint_dir, checkpoint))
-                
+            self.isolation_forest = IsolationForest(
+                contamination=self.config['contamination'],
+                random_state=self.config['random_state'],
+                n_jobs=self.config.get('max_workers', 4)
+            )
+            
+            self.kmeans = MiniBatchKMeans(
+                n_clusters=self.config['n_clusters'],
+                random_state=self.config['random_state'],
+                batch_size=self.config['batch_size'],
+                n_init=3
+            )
+            
+            # Initialize transformer models as None (lazy loading)
+            self._topic_classifier = None
+            self._sentiment_analyzer = None
+            
+            # Initialize caches
+            self._vector_cache = {}
+            self._sentiment_cache = {}
+            self._topic_cache = {}
+            
+            # Initialize locks
+            self._model_lock = threading.Lock()
+            self._cache_lock = threading.Lock()
+            
+            # Set instance variables
+            self.min_topic_confidence = self.config['min_topic_confidence']
+            self.batch_size = self.config['batch_size']
+            self.memory_threshold = self.config['memory_threshold']
+            self.cache_vectors = self.config['cache_vectors']
+            self.vector_cache_size = self.config['vector_cache_size']
+            
+            # Track model fitting status
+            self.is_fitted = False
+            
+            logger.info(f"MLComponents initialized with device: {self.device}")
+            
         except Exception as e:
-            logger.error(f"Error cleaning checkpoints: {str(e)}")
-            
-    def load_checkpoint(self, checkpoint_path: str) -> Tuple[int, List[Dict[str, Any]]]:
-        """Load processing checkpoint."""
-        try:
-            with open(checkpoint_path, 'rb') as f:
-                checkpoint_data = pickle.load(f)
-            
-            # Restore state
-            self.vectorizer = checkpoint_data['vectorizer']
-            self.anomaly_detector = checkpoint_data['anomaly_detector']
-            self.clusterer = checkpoint_data['clusterer']
-            
-            logger.info(f"Restored checkpoint from chunk {checkpoint_data['chunk_id']}")
-            return checkpoint_data['chunk_id'], checkpoint_data['results']
-            
-        except Exception as e:
-            logger.error(f"Error loading checkpoint: {str(e)}")
+            logger.error(f"Error initializing MLComponents: {str(e)}")
             raise
+    
+    def fit(self, texts: List[str]):
+        """Fit the ML models on a sample of texts."""
+        try:
+            logger.info("Fitting ML models...")
+            
+            # Filter out invalid texts
+            valid_texts = [t for t in texts if t and isinstance(t, str) and len(t.strip()) > 0]
+            if not valid_texts:
+                raise ValueError("No valid texts provided for fitting")
+            
+            # Take a sample for fitting
+            sample_size = min(10000, len(valid_texts))
+            sample_texts = valid_texts[:sample_size]
+            
+            # Fit TF-IDF
+            logger.info("Fitting TF-IDF vectorizer...")
+            self.vectorizer.fit(sample_texts)
+            
+            # Get vectors for anomaly detection and clustering
+            vectors = self.vectorizer.transform(sample_texts).toarray()
+            
+            # Fit isolation forest
+            logger.info("Fitting isolation forest...")
+            self.isolation_forest.fit(vectors)
+            
+            # Fit k-means
+            logger.info("Fitting k-means...")
+            self.kmeans.fit(vectors)
+            
+            self.is_fitted = True
+            logger.info("ML models fitted successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error fitting ML models: {str(e)}")
+            return False
+    
+    def process_texts(self, texts: List[str]) -> Dict[str, Any]:
+        """Process texts through all ML components."""
+        try:
+            if not texts:
+                return {}
+            
+            # Filter out None and empty texts
+            valid_texts = [t for t in texts if t and isinstance(t, str) and len(t.strip()) > 0]
+            if not valid_texts:
+                return {}
+            
+            # Fit models if not fitted
+            if not self.is_fitted:
+                self.fit(valid_texts)
+            
+            # Process in batches
+            results = {
+                'topics': [],
+                'sentiments': [],
+                'anomalies': [],
+                'clusters': []
+            }
+            
+            for i in range(0, len(valid_texts), self.batch_size):
+                batch = valid_texts[i:i + self.batch_size]
+                
+                # Get topics
+                topics = self._get_topics(batch)
+                results['topics'].extend(topics)
+                
+                # Get sentiments
+                sentiments = self._get_sentiments(batch)
+                results['sentiments'].extend(sentiments)
+                
+                # Get anomalies
+                anomalies = self._detect_anomalies(batch)
+                results['anomalies'].extend(anomalies)
+                
+                # Get clusters
+                clusters = self._get_clusters(batch)
+                results['clusters'].extend(clusters)
+                
+                # Clear memory if needed
+                if psutil.virtual_memory().percent > self.memory_threshold:
+                    self._clear_caches()
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error in process_texts: {str(e)}")
+            return {}
+    
+    def is_anomaly(self, text: str) -> bool:
+        """Check if a text is an anomaly."""
+        try:
+            if not text or not isinstance(text, str) or not text.strip():
+                return False
+                
+            if not self.is_fitted:
+                return False
+                
+            vector = self.vectorizer.transform([text]).toarray()
+            prediction = self.isolation_forest.predict(vector)[0]
+            return prediction == -1
+            
+        except Exception as e:
+            logger.error(f"Error in is_anomaly: {str(e)}")
+            return False
+    
+    def get_topic(self, text: str) -> str:
+        """Get topic for a single text."""
+        try:
+            if not text or not isinstance(text, str) or len(text.strip()) < 3:
+                return "unknown"
+            
+            topics = self._get_topics([text])
+            if not topics:
+                return "unknown"
+                
+            topic = topics[0]
+            if topic['scores'][0] < self.min_topic_confidence:
+                return "unknown"
+                
+            return topic['labels'][0]
+            
+        except Exception as e:
+            logger.error(f"Error in get_topic: {str(e)}")
+            return "unknown"
+    
+    def get_sentiment(self, text: str) -> float:
+        """Get sentiment score for a single text."""
+        try:
+            if not text or not isinstance(text, str) or len(text.strip()) < 3:
+                return 0.0
+            
+            sentiments = self._get_sentiments([text])
+            if not sentiments:
+                return 0.0
+                
+            return sentiments[0]['score']
+            
+        except Exception as e:
+            logger.error(f"Error in get_sentiment: {str(e)}")
+            return 0.0
+    
+    def _clear_caches(self):
+        """Clear caches and run garbage collection."""
+        with self._cache_lock:
+            self._vector_cache.clear()
+            self._sentiment_cache.clear()
+            self._topic_cache.clear()
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        logger.info("Cleared caches and ran garbage collection")
+    
+    def save_models(self, path: str):
+        """Save models to disk."""
+        try:
+            os.makedirs(path, exist_ok=True)
+            
+            # Save scikit-learn models
+            from joblib import dump
+            dump(self.vectorizer, os.path.join(path, 'vectorizer.joblib'))
+            dump(self.isolation_forest, os.path.join(path, 'isolation_forest.joblib'))
+            dump(self.kmeans, os.path.join(path, 'kmeans.joblib'))
+            
+            logger.info(f"Models saved to {path}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving models: {str(e)}")
+            return False
+    
+    def load_models(self, path: str):
+        """Load models from disk."""
+        try:
+            from joblib import load
+            
+            # Load scikit-learn models
+            self.vectorizer = load(os.path.join(path, 'vectorizer.joblib'))
+            self.isolation_forest = load(os.path.join(path, 'isolation_forest.joblib'))
+            self.kmeans = load(os.path.join(path, 'kmeans.joblib'))
+            
+            logger.info(f"Models loaded from {path}")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading models: {str(e)}")
+            return False
+    
+    def _get_topics(self, texts: List[str]) -> List[Dict[str, Any]]:
+        """Get topics for a batch of texts."""
+        try:
+            # Initialize topic classifier if needed
+            if self._topic_classifier is None:
+                self._topic_classifier = pipeline(
+                    "zero-shot-classification",
+                    model="facebook/bart-large-mnli",
+                    device=self.device
+                )
+            
+            # Process texts in smaller batches
+            results = []
+            for i in range(0, len(texts), self.config['model_batch_size']):
+                batch = texts[i:i + self.config['model_batch_size']]
+                topics = self._topic_classifier(
+                    batch,
+                    candidate_labels=["environment", "technology", "social", "business", "other"],
+                    multi_label=False
+                )
+                results.extend(topics)
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error in topic classification: {str(e)}")
+            return [{"labels": ["other"], "scores": [1.0]} for _ in texts]
+    
+    def _get_sentiments(self, texts: List[str]) -> List[Dict[str, Any]]:
+        """Get sentiments for a batch of texts."""
+        try:
+            # Initialize sentiment analyzer if needed
+            if self._sentiment_analyzer is None:
+                self._sentiment_analyzer = pipeline(
+                    "sentiment-analysis",
+                    model="distilbert-base-uncased-finetuned-sst-2-english",
+                    device=self.device
+                )
+            
+            # Process texts in smaller batches
+            results = []
+            for i in range(0, len(texts), self.config['model_batch_size']):
+                batch = texts[i:i + self.config['model_batch_size']]
+                sentiments = self._sentiment_analyzer(batch)
+                results.extend(sentiments)
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error in sentiment analysis: {str(e)}")
+            return [{"label": "NEUTRAL", "score": 0.5} for _ in texts]
+    
+    def _detect_anomalies(self, texts: List[str]) -> List[bool]:
+        """Detect anomalies in a batch of texts."""
+        try:
+            if not self.is_fitted:
+                return [False for _ in texts]
+                
+            vectors = self.vectorizer.transform(texts).toarray()
+            predictions = self.isolation_forest.predict(vectors)
+            return [p == -1 for p in predictions]
+            
+        except Exception as e:
+            logger.error(f"Error in anomaly detection: {str(e)}")
+            return [False for _ in texts]
+    
+    def _get_clusters(self, texts: List[str]) -> List[int]:
+        """Get cluster assignments for a batch of texts."""
+        try:
+            if not self.is_fitted:
+                return [-1 for _ in texts]
+                
+            vectors = self.vectorizer.transform(texts).toarray()
+            return self.kmeans.predict(vectors).tolist()
+            
+        except Exception as e:
+            logger.error(f"Error in clustering: {str(e)}")
+            return [-1 for _ in texts]

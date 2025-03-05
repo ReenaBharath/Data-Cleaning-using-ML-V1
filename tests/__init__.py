@@ -1,3 +1,1 @@
-"""
-Test package for ML Data Cleaning.
-"""
+"""Test suite for Zero Waste ML Pipeline."""

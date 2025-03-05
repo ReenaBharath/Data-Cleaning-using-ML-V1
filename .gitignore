@@ -91,6 +91,7 @@ docs/api/
 .pytest_cache/
 .coverage
 coverage.xml
+coverage_html/
 .mypy_cache/
 
 # Distribution

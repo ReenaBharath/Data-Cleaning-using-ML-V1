@@ -1,0 +1,43 @@
+Data Quality Validation Report
+============================
+
+Statistical Validation
+----------------------
+Passed: True
+Score: 0.87
+
+Recommendations:
+- High missing rate in topic: 100.00%
+- High outlier rate in sentiment: 6.59%
+
+Details:
+- missing_rates: {'text': 0.0, 'hashtags': 0.0, 'country': 0.0, 'development_status': 0.0, 'sentiment': 0.0, 'topic': 1.0, 'is_anomaly': 0.0, 'cluster': 0.0, 'country_code': 0.0, 'cleaned_text': 0.0}
+- outlier_rates: {'sentiment': 0.06588063987704006, 'cluster': 0.0}
+
+Rules Validation
+----------------
+Passed: True
+Score: 0.98
+
+Recommendations:
+- Found 5798 invalid country codes
+
+Details:
+- type_validation: {'errors': []}
+
+Ml Validation
+-------------
+Passed: True
+Score: 1.05
+
+Recommendations:
+- High anomaly rate: 8.95%
+- Cluster 1 contains 0.00% of data
+- Cluster 2 contains 0.00% of data
+- Cluster 0 contains 0.00% of data
+
+Details:
+- anomaly_rate: 0.08950593564826986
+- cluster_distribution: {1: 0.40756365401338807, 2: 0.36515460998645016, 0: 0.2272817360001618}
+- sentiment_stats: {'mean': 0.060897526644690274, 'std': 0.24934390426957848}
+

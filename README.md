@@ -1,10 +1,51 @@
 # Zero Waste Data Cleaning Pipeline v1.0.0
 
+## 1. Project Overview
+
 A high-performance machine learning pipeline for cleaning and analyzing large environmental text datasets, featuring parallel processing, advanced ML components, and comprehensive data quality visualization.
 
-## Overview
+### Project Structure
 
-This pipeline efficiently processes large text datasets related to zero waste initiatives using:
+```text
+zero_waste_pipeline/
+├── src/
+│   ├── core/
+│   │   ├── preprocessing/           # Text and metadata cleaning
+│   │   │   ├── advanced_processor.py    # Main text cleaning
+│   │   │   ├── hashtag_processor.py     # Hashtag normalization
+│   │   │   └── metadata_cleaner.py      # Country/status cleaning
+│   │   ├── models/
+│   │   │   └── ml_components.py     # ML models (clustering, sentiment)
+│   │   └── pipeline.py              # Main processing pipeline
+│   ├── validation/
+│   │   └── data_quality.py          # Data quality checks
+│   └── visualization/
+│       ├── config.py               # Visualization configuration
+│       ├── comparative_plots.py    # Pre/post cleaning comparisons
+│       ├── anomaly_plots.py       # Anomaly analysis plots
+│       ├── performance_plots.py   # Performance monitoring
+│       ├── column_plots.py        # Column-specific analysis
+│       ├── ml_plots.py           # ML insight visualizations
+│       └── uncertainty_plots.py   # Uncertainty analysis
+├── tests/                           # Test suites
+│   ├── test_preprocessing.py        # Preprocessing tests
+│   ├── test_ml_components.py        # ML model tests
+│   ├── test_pipeline.py            # Integration tests
+│   └── test_data_quality.py        # Validation tests
+├── configs/                         # Configuration files
+├── data/                           # Data directory
+└── visualizations/                 # Generated visualizations
+```
+
+### Architecture Overview
+
+```text
+[Input Data] → [Text Cleaning] → [ML Processing] → [Quality Analysis] → [Visualization]
+     ↓              ↓                   ↓                   ↓                ↓
+   CSV/JSON    Text Processors     ML Components     Quality Metrics    Reports/Plots
+```
+
+### Key Features
 
 - Parallel text processing with multicore CPU support
 - Fast RandomForest classifiers for initial predictions
@@ -12,162 +53,207 @@ This pipeline efficiently processes large text datasets related to zero waste in
 - Memory-optimized batch processing
 - Real-time progress tracking and visualization
 
-## Key Features
+### Target Use Cases
 
-### Text Processing
+- Environmental data analysis
+- Social media text cleaning
+- Large-scale text standardization
+- Automated data quality improvement
+- Research data preparation
 
-- Advanced text cleaning and standardization
-- Language detection with confidence scoring
-- Hashtag extraction and normalization
-- URL and HTML removal
-- Special character handling
-- Emoji removal
+## 2. Installation & Setup
 
-### ML Components
+### System Requirements
 
-- Anomaly detection using Isolation Forest
-- Text clustering with DBSCAN
-- Sentiment analysis using DistilBERT
-- Topic classification using BART Zero-Shot
-- Fast RandomForest classifiers for quick predictions
+- Python 3.10+
+- 8GB+ RAM (16GB recommended)
+- CUDA-compatible GPU (optional)
+- 4+ CPU cores recommended
 
-### Metadata Processing
-
-- Country code validation and standardization
-- Development status classification
-- Metadata cleaning and normalization
-
-### Performance Optimizations
-
-- Parallel processing with ProcessPoolExecutor
-- Lazy loading of heavy transformer models
-- Memory-efficient batch processing
-- GPU acceleration support (when available)
-- Regular memory cleanup
-
-### Progress Tracking
-
-- Real-time progress bars for each stage
-- Detailed logging with timestamps
-- Memory usage monitoring
-- Processing speed metrics
-- Data quality statistics
-
-### Visualization
-
-- Text length distribution analysis
-- Sentiment distribution plots
-- Topic distribution analysis
-- Anomaly detection visualization
-- Cluster distribution plots
-
-## Installation
-
-1. Clone the repository:
+### Environment Setup
 
 ```bash
 git clone https://github.com/ReenaBharath/Data-Cleaning-using-ML-V1-4.git
 cd Data-Cleaning-using-ML-V1-4
-```
-
-2.Create a virtual environment:
-
-```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-.venv\Scripts\activate     # Windows
-```
-
-3.Install dependencies:
-
-```bash
+.venv\Scripts\activate    # Windows
 pip install -r requirements.txt
 ```
 
-## Usage
+### Configuration
 
-1. Prepare your data:
-   - Place your input CSV file in `data/raw/zero_waste.csv`
-   - Required columns: 'text', 'hashtags', 'country', 'development_status'
+- Adjust `configs/pipeline_config.yaml` for custom settings
+- Set environment variables in `.env` (if needed)
+- Configure GPU usage in `configs/ml_config.yaml`
 
-2. Run the pipeline:
+## 3. Running the Pipeline
+
+### Basic Usage
 
 ```bash
+# Process data with default settings
 python main.py
+
+# Run with specific configuration
+python main.py --config configs/custom_config.yaml
+
+# Run with GPU acceleration
+python main.py --use-gpu
 ```
 
-3.Find outputs in:
+### Running Tests
 
-- `data/processed/cleaned_zero_waste.csv`: Cleaned and processed data
-- `data/reports/`: Data quality visualizations and reports
+```bash
+# Run all tests
+pytest tests/
 
-## Project Structure
+# Run specific test suite
+pytest tests/test_preprocessing.py
 
-```tree
-Data-Cleaning-using-ML-V1-4/
-├── data/
-│   ├── raw/                # Input data
-│   ├── processed/          # Cleaned data
-│   └── reports/            # Quality reports
-├── src/
-│   ├── core/               # Core components
-│   │   ├── preprocessing/  # Text processors
-│   │   └── models/         # ML components
-│   └── visualization/      # Visualization tools
-├── main.py                 # Pipeline entry point
-├── requirements.txt        # Dependencies
-└── README.md               # Documentation
+# Run with coverage report
+pytest --cov=src tests/
+
+# Run with verbose output
+pytest -v tests/
 ```
 
-## Output Files
+## 4. Understanding Visualizations
 
-1. Processed Data (`data/processed/cleaned_zero_waste.csv`):
-   - cleaned_text: Cleaned and standardized text
-   - hashtags: Extracted and normalized hashtags
-   - country_code: Standardized ISO country codes
-   - development_status: Standardized development status
-   - is_anomaly: Anomaly detection results
-   - cluster: Cluster assignments
-   - sentiment: Sentiment analysis results
-   - topic: Topic classification results
+### Visualization Types
 
-2. Quality Reports (`data/reports/`):
-   - Text length distribution plots
-   - Sentiment distribution analysis
-   - Topic distribution visualization
-   - Anomaly detection results
-   - Cluster distribution plots
-   - Detailed summary statistics
+#### 1. Text Quality Visualizations (`visualizations/text/`)
 
-## Performance
+- `length_distribution.png`: Histogram showing text length distribution
+  - X-axis: Text length
+  - Y-axis: Frequency
+  - Use to identify unusually short/long texts
 
-- Processing Speed: ~2000-3000 rows/second (CPU)
-- Memory Usage: ~2-4GB for 100k rows
-- GPU Acceleration: Automatic when available
-- Parallel Processing: Uses all available CPU cores
+- `language_distribution.png`: Bar chart of detected languages
+  - X-axis: Language codes
+  - Y-axis: Count
+  - Helps identify non-English content
 
-## Requirements
+#### 2. Metadata Visualizations (`visualizations/metadata/`)
 
-- Python 3.10+
-- 8GB+ RAM (16GB recommended for large datasets)
-- CUDA-compatible GPU (optional)
-- See requirements.txt for package versions
+- `country_heatmap.png`: Heatmap of data by country
+  - X-axis: Development status
+  - Y-axis: Country codes
+  - Color intensity: Data point count
+  - Note: Large numbers are formatted as 1.5e4 (15,000)
 
-## Notes
+- `status_distribution.png`: Development status distribution
+  - Shows proportion of developed/developing countries
 
-- The pipeline automatically uses GPU if available
-- Memory usage scales with chunk_size (default: 50,000 rows)
-- First run includes model downloads (~2GB disk space)
-- Progress bars show real-time status for all stages
+#### 3. ML Analysis Visualizations (`visualizations/ml/`)
 
-## Contributing
+- `cluster_distribution.png`: Topic cluster visualization
+  - Each color represents a distinct topic cluster
+  - Size indicates cluster population
+
+- `sentiment_analysis.png`: Sentiment distribution
+  - Red: Negative
+  - Yellow: Neutral
+  - Green: Positive
+
+### Interpreting Results
+
+1. Data Quality Metrics:
+   - Green: Meets quality thresholds
+   - Yellow: Requires attention
+   - Red: Needs immediate action
+
+2. Common Patterns:
+   - Cluster overlaps indicate related topics
+   - Sharp spikes in distributions may indicate data bias
+   - Missing data shown in grey
+
+## 5. Core Components
+
+### Text Processing Pipeline
+
+- Language detection (FastText)
+- URL/mention removal (regex)
+- BERT-based duplicate detection
+- Character normalization
+- Unicode standardization
+
+### Hashtag Processing
+
+- Case normalization
+- Special character removal
+- Duplicate elimination
+- Format standardization (#tag)
+
+### Metadata Cleaning
+
+- ISO country code validation
+- Development status mapping
+- Empty value handling
+- Code verification (pycountry)
+
+### ML Components
+
+- IsolationForest (anomalies)
+- MiniBatchKMeans (clustering)
+- TF-IDF vectorization
+- DistilBERT (sentiment)
+- BART (topic classification)
+
+## 6. Performance Optimization
+
+### Memory Management
+
+- Batch size: 10,000 rows default
+- Regular garbage collection
+- Lazy model loading
+- DataFrame optimization
+
+### Processing Speed
+
+- CPU: 2000-3000 rows/second
+- GPU: 4000-5000 rows/second
+- ~11 minutes for 250,000 rows
+
+### GPU Acceleration
+
+- Transformer models
+- Batch inference
+- Automatic CPU fallback
+
+## 7. Troubleshooting
+
+### Common Issues
+
+1. Memory Errors
+   - Reduce batch_size in config
+   - Enable garbage collection
+   - Close other applications
+
+2. Slow Processing
+   - Check CPU usage
+   - Enable parallel processing
+   - Optimize chunk size
+
+3. Visualization Issues
+   - Check matplotlib backend
+   - Ensure sufficient disk space
+   - Update display settings
+
+### Error Messages
+
+- `DataValidationError`: Input data format issues
+- `MemoryError`: Reduce batch size
+- `CUDAOutOfMemoryError`: Reduce GPU batch size
+- `ImportError`: Check requirements.txt
+
+## 8. Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a pull request
+2. Create feature branch
+3. Add tests for new features
+4. Submit pull request
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
