@@ -36,13 +36,11 @@ Zero-Waste-Data-Cleaning-Pipeline/
 ├── src/
 │   ├── data_processing/              # Data cleaning modules
 │   │   ├── __init__.py
-│   │   ├── country_cleaning.py       # Country code cleaning functions
 │   │   ├── hashtag_cleaning.py       # Hashtag cleaning functions
 │   │   └── text_cleaning.py          # Text cleaning functions
 │   ├── machine_learning/             # ML components
 │   │   ├── __init__.py
-│   │   ├── anomaly_detection.py      # Anomaly detection algorithms
-│   │   ├── clustering.py             # Clustering algorithms
+│   │   ├── ml_models.py              # ML models
 │   │   └── sentiment_analysis.py     # Sentiment analysis functions
 │   ├── utils/                        # Utility functions
 │   │   ├── __init__.py
@@ -113,31 +111,21 @@ The pipeline can be configured by modifying parameters in the main script:
 
 ---
 
-## 🚀 Running the Pipeline
+### Running the Pipeline
 
-### Basic Usage
+You can also run the application using Docker:
 
-Run the main script to execute the entire pipeline:
+1. Build the Docker image:
 
-```bash
-python src/main.py
-```
+   ```bash
+   docker compose build #Build the Docker
+   ```
 
-This will:
+2. Run the application:
 
-1. Load the dataset from `data/zero_waste.csv`
-2. Clean the data
-3. Apply machine learning algorithms
-4. Generate visualizations
-5. Save results to the `output` directory
-
-### Running Tests
-
-To run tests for individual components:
-
-```bash
-python -m unittest discover tests
-```
+   ```bash
+   docker compose up --watch #Run the program
+   ```
 
 ### Running the Visualization Pipeline
 

@@ -9,7 +9,6 @@ scipy>=1.7.0
 
 # Text Processing
 nltk>=3.8.0
-spacy>=3.1.0
 textblob>=0.17.0
 pycountry>=22.3.5
 ftfy>=6.1.1
