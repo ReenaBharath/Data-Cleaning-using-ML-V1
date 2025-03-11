@@ -309,12 +309,6 @@ The pipeline tracks several performance metrics:
 
 ---
 
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
 ## 👥 Contributors
 
 - Reena Bharath
