@@ -102,19 +102,32 @@ This pipeline is designed for data scientists and researchers working with socia
    ```bash
    git clone https://github.com/ReenaBharath/Data-Cleaning-using-ML-V1.git
    cd Data-Cleaning-using-ML-V1
-   ```
 
-2. Create a virtual environment:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
+2. Set working directory:
 
    ```bash
-   pip install -r requirements.txt
+   WORKDIR /app
+   ```
+
+3. Install c libs and compiler:
+
+   ```bash
+   RUN apt-get update
+   RUN apt-get install build-essential
+   ```
+
+4. Install dependencies:
+
+   ```bash
+   COPY requirements.txt requirements.txt
+   RUN pip install -U pip setuptools wheel
+   RUN pip install -r requirements.txt
+   ```
+
+5. Copy working files:
+
+   ```bash
+   COPY . .
    ```
 
 ### Running the Pipeline
@@ -126,13 +139,13 @@ You can run the application using Docker or directly with Python:
 1. Build the Docker image:
 
    ```bash
-   docker build -t zero-waste-data-cleaning .
+   docker compose build
    ```
 
 2. Run the container:
 
    ```bash
-   docker run -v $(pwd)/data:/app/data -v $(pwd)/output:/app/output zero-waste-data-cleaning
+   docker compose up --watch
    ```
 
 #### Using Python

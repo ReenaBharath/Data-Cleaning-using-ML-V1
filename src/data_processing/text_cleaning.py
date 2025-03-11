@@ -102,7 +102,7 @@ def detect_language(text):
         text (str): Text to detect language of
         
     Returns:
-        str: Detected language code ('en', 'es', 'fr', etc.) or 'unknown'
+        str: Detected language code ('en', 'es') or 'unknown'
     """
     if not isinstance(text, str) or not text.strip():
         return 'unknown'
