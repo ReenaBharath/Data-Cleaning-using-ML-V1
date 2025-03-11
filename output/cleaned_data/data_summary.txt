@@ -1,8 +1,0 @@
-Data Summary
-================================================================================
-
-                          Type  Non-Null Count  Null Count    Null %  Unique Values   Unique %
-text                    object          247235           0  0.000000         242058  97.906041
-hashtags                object          247194          41  0.016583         144665  58.513155
-place_country_code      object          247209          26  0.010516            193   0.078063
-Developed / Developing  object          247235           0  0.000000              2   0.000809

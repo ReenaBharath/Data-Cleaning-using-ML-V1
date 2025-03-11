@@ -10,7 +10,7 @@ RUN apt-get install build-essential
 # install python dependencies
 COPY requirements.txt requirements.txt
 RUN pip install -U pip setuptools wheel
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # copy working files
 COPY . .
